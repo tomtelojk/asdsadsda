@@ -1,6 +1,8 @@
 name: Publicar desktop Linux
 on:
   workflow_dispatch:
+  push:
+    tags: ['v*']
 permissions:
   contents: write
 jobs:
@@ -24,4 +26,11 @@ jobs:
           if ! gh release view "$tag" >/dev/null 2>&1; then
             gh release create "$tag" --target "$GITHUB_SHA" --title "Vale do Sol $version · Linux" --notes "Aplicativo Linux x86_64. Torne o AppImage executável e abra. Alternativa sem FUSE: extraia o tar.gz e execute vale-do-sol."
           fi
-          gh release upload "$tag" release/*.AppImage release/*.tar.gz --clobber
+          python3 - <<'PYTHON'
+          import hashlib, pathlib, zipfile
+          with zipfile.ZipFile('vale-do-sol.zip', 'w', compression=zipfile.ZIP_DEFLATED) as z:
+              z.write('vale-do-sol.html')
+          files = list(pathlib.Path('release').glob('*.AppImage')) + list(pathlib.Path('release').glob('*.tar.gz')) + [pathlib.Path('vale-do-sol.zip')]
+          pathlib.Path('release/SHA256SUMS').write_text(''.join(f'{hashlib.file_digest(p.open("rb"), "sha256").hexdigest()}  {p.name}\n' for p in files))
+          PYTHON
+          gh release upload "$tag" release/*.AppImage release/*.tar.gz vale-do-sol.zip release/SHA256SUMS --clobber
