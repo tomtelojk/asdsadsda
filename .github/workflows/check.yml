@@ -1,0 +1,25 @@
+name: Verificar jogo
+on:
+  push:
+    branches: [main]
+  pull_request:
+permissions:
+  contents: read
+jobs:
+  test:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run build
+      - run: npx playwright-core install --with-deps chromium
+      - name: Exercitar o jogo no navegador
+        run: |
+          npm run dev > /tmp/vale-vite.log 2>&1 &
+          node -e "let n=0;const check=()=>fetch('http://localhost:5173').then(r=>{if(!r.ok)throw Error(r.status)}).catch(e=>{if(++n>30)process.exit(1);setTimeout(check,500)});check()"
+          npm run test:browser

@@ -1,0 +1,27 @@
+name: Publicar desktop Linux
+on:
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  linux:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v5
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - run: npm run package:linux
+      - name: Publicar downloads
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          version=$(node -p "require('./package.json').version")
+          tag="v$version"
+          if ! gh release view "$tag" >/dev/null 2>&1; then
+            gh release create "$tag" --target "$GITHUB_SHA" --title "Vale do Sol $version · Linux" --notes "Aplicativo Linux x86_64. Torne o AppImage executável e abra. Alternativa sem FUSE: extraia o tar.gz e execute vale-do-sol."
+          fi
+          gh release upload "$tag" release/*.AppImage release/*.tar.gz --clobber
