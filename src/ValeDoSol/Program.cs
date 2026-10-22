@@ -8,23 +8,25 @@ public static class Program
     public static int Main(string[] args)
     {
         if (args.Contains("--licenses")) { foreach (string resource in new[] { "ValeDoSol.License.txt", "ValeDoSol.RaylibLicense.txt", "ValeDoSol.FontLicense.txt" }) { using var stream = typeof(Program).Assembly.GetManifestResourceStream(resource); if (stream != null) { using StreamReader reader = new(stream); Console.WriteLine(reader.ReadToEnd()); } } return 0; }
-        if (args.Contains("--version")) { Console.WriteLine("Vale do Sol 3.0.0 | C# + .NET 10 + raylib 6.2 | Linux x86_64"); return 0; }
+        if (args.Contains("--version")) { Console.WriteLine("Vale do Sol 4.0.0 | C# + .NET 10 + raylib 6.2 | Linux x86_64"); return 0; }
         if (args.Contains("--self-test")) return SelfTests.Run();
         if (args.Contains("--help")) { Console.WriteLine("Vale do Sol - C#\n--version\n--save-dir DIRETORIO\n--smoke (fecha após 60 quadros)\n--screenshot ARQUIVO.png\n--village (somente com --smoke)"); return 0; }
-        bool smoke = false, village = false; string? screenshot = null, dir = null;
+        bool smoke = false, village = false, home = false, shop = false; string? screenshot = null, dir = null;
         for (int i = 0; i < args.Length; i++) switch (args[i])
             {
                 case "--smoke": smoke = true; break;
                 case "--village": village = true; break;
+                case "--home": home = true; break;
+                case "--shop": shop = true; break;
                 case "--save-dir" when i + 1 < args.Length: dir = args[++i]; break;
                 case "--screenshot" when i + 1 < args.Length: screenshot = args[++i]; break;
                 default: Console.Error.WriteLine($"Argumento desconhecido ou incompleto: {args[i]}"); return 2;
             }
         string? xdg = Environment.GetEnvironmentVariable("XDG_DATA_HOME");
         dir ??= Path.Combine(string.IsNullOrEmpty(xdg) ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "share") : xdg, "vale-do-sol-csharp");
-        Game game = new() { ignore_focus = smoke }; game_init(game, dir); if (smoke && village) game_travel(game);
+        Game game = new() { ignore_focus = smoke }; game_init(game, dir); if (smoke && village) game_scene(game, Logic.VILLAGE, new(416, 400)); if (smoke && home) game_scene(game, Logic.HOME, new(320, 280)); if (smoke && shop) game_scene(game, Logic.SHOP, new(352, 280));
         if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DISPLAY")) && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY"))) { Console.Error.WriteLine("Abra o jogo em uma sessão gráfica Linux. Para testar sem janela, use --self-test."); return 1; }
-        SetTraceLogLevel(LOG_WARNING); SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT); InitWindow(1280, 854, "Vale do Sol - C#"); if (!IsWindowReady()) return 1; SetWindowMinSize(960, 640); SetExitKey(KEY_NULL); SetTargetFPS(60);
+        SetTraceLogLevel(LOG_WARNING); SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT); InitWindow(1280, 720, "Vale do Sol"); if (!IsWindowReady()) return 1; SetWindowMinSize(960, 540); SetExitKey(KEY_NULL); SetTargetFPS(60);
         Image icon = GenImageColor(64, 64, color_hex(0x2a4638)); ImageDrawRectangle(ref icon, 28, 28, 7, 29, color_hex(0x9eaf72)); ImageDrawRectangle(ref icon, 16, 37, 17, 6, color_hex(0xc4cd8b)); ImageDrawRectangle(ref icon, 32, 31, 17, 6, color_hex(0xa9bd7c)); ImageDrawRectangle(ref icon, 21, 9, 23, 23, color_hex(0xeed18b)); ImageDrawRectangle(ref icon, 27, 15, 11, 11, color_hex(0xb88a51)); SetWindowIcon(icon); UnloadImage(icon);
         LoadUiFont();
         RenderTexture target = LoadRenderTexture(UI_W, UI_H); if (!IsRenderTextureValid(target)) { CloseWindow(); return 1; }

@@ -2,7 +2,7 @@ name: Publicar CSharp Linux
 on:
   workflow_dispatch:
   push:
-    tags: ['v3*']
+    tags: ['v4*']
 permissions:
   contents: write
 jobs:
@@ -17,14 +17,20 @@ jobs:
       - name: Testar o executável distribuído
         run: |
           sudo apt-get update && sudo apt-get install -y xvfb libgl1-mesa-dri
-          ./release/Vale-do-Sol-CSharp-3.0.0-Linux-x86_64 --self-test
-          xvfb-run -a ./release/Vale-do-Sol-CSharp-3.0.0-Linux-x86_64 --smoke --save-dir "$RUNNER_TEMP/vale-published"
+          version=$(sed -n 's/.*<Version>\([^<]*\)<\/Version>.*/\1/p' src/ValeDoSol/ValeDoSol.csproj)
+          binary="./release/Vale-do-Sol-CSharp-$version-Linux-x86_64"
+          "$binary" --self-test
+          xvfb-run -a "$binary" --smoke --save-dir "$RUNNER_TEMP/vale-farm"
+          xvfb-run -a "$binary" --smoke --home --save-dir "$RUNNER_TEMP/vale-home"
+          xvfb-run -a "$binary" --smoke --shop --save-dir "$RUNNER_TEMP/vale-shop"
       - name: Publicar downloads
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          tag=v3.0.0
+          version=$(sed -n 's/.*<Version>\([^<]*\)<\/Version>.*/\1/p' src/ValeDoSol/ValeDoSol.csproj)
+          tag="v$version"
+          binary="release/Vale-do-Sol-CSharp-$version-Linux-x86_64"
           if ! gh release view "$tag" >/dev/null 2>&1; then
-            gh release create "$tag" --draft --target "$GITHUB_SHA" --title "Vale do Sol 3.0 · C# para Linux" --notes-file docs/RELEASE.md
+            gh release create "$tag" --draft --target "$GITHUB_SHA" --title "Vale do Sol $version · Uma vida no campo" --notes-file docs/RELEASE.md
           fi
-          gh release upload "$tag" release/Vale-do-Sol-CSharp-3.0.0-Linux-x86_64 release/*.tar.gz release/SHA256SUMS-CSharp --clobber
+          gh release upload "$tag" "$binary" "$binary.tar.gz" release/SHA256SUMS-CSharp --clobber

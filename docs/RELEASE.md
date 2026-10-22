@@ -1,21 +1,28 @@
-O Vale do Sol agora é um jogo de desktop em **C# com .NET 10**. A lógica, a interface e os saves foram reescritos em C#. raylib fornece os gráficos e a janela; não há HTML ou Electron nesta edição.
+A edição 4 muda a apresentação e a exploração do Vale do Sol: o cenário ocupa toda a janela e a câmera acompanha o personagem, com interface de jogo sobre o mapa.
 
-### Como jogar
+### Novidades
 
-Baixe **Vale-do-Sol-CSharp-3.0.0-Linux-x86_64**, marque “Permitir executar como programa” nas propriedades e abra. O arquivo já inclui o runtime .NET e a biblioteca gráfica. Não é necessário instalar SDK, navegador ou FUSE.
+- Mapas ampliados para 2048 × 1408, com estradas, bosques e lagos.
+- Câmera próxima, movimento em quatro direções e corrida com Shift.
+- Barra de ferramentas de nove posições e HUD com relógio, moedas e energia.
+- Mochila, missões e moradores em menus abertos por teclas.
+- Cultivo por proximidade e animação do uso das ferramentas.
+- Interior da casa com cama para dormir e interior do armazém com atendimento no balcão.
+- Retratos nos diálogos e texto que aparece gradualmente.
+- Saves C# da edição 3 preservados, com cópia de segurança antes da atualização.
 
-Alternativa: extraia o `.tar.gz` e abra `ValeDoSol` dentro da pasta.
+Mantém as três culturas, quatro NPCs, amizade, presentes, missões, pesca, loja e chuva. Arte e personagens originais. Continua em C#/.NET com raylib, sem HTML ou Electron.
 
-**Sistema:** Linux x86_64, glibc 2.38 ou superior, sessão X11/XWayland e OpenGL 3.3; por exemplo Ubuntu 24.04. Aplicativo sem assinatura e sem atualizador automático.
+### Baixar
 
-### Conteúdo
+Baixe **Vale-do-Sol-CSharp-4.0.0-Linux-x86_64**, permita execução nas propriedades e abra. Alternativa: extraia o `.tar.gz` e abra `ValeDoSol`. O runtime .NET está incluído.
 
-Fazenda com três culturas, vila com quatro NPCs, diálogos, amizade, presentes, três missões, loja, regador melhorável, pesca, coleta, chuva e passagem dos dias. Saves locais e backup/restauração.
+Requer Linux x86_64, glibc 2.38+, X11/XWayland e OpenGL 3.3, como Ubuntu 24.04. Não precisa instalar SDK ou FUSE.
 
-**Controles:** WASD/setas para andar, 1–5 para ferramentas, clique para cultivar, E para conversar/recolher, F e Espaço para pescar, H para ajuda e F11 para tela cheia.
+### Controles principais
 
-**Saves:** `~/.local/share/vale-do-sol-csharp/`. A versão antiga fica preservada na release 2.0. Os saves do navegador/Electron não são importados nesta edição.
+**WASD** para andar, **Shift** para correr, **1–9** para equipar, **clique/Espaço** para usar ferramenta perto do personagem, **E** para conversar/entrar/recolher, **I/J/R** para os menus, **Escape** para pausa, **F11** para tela cheia. Siga a estrada leste da fazenda para chegar à vila. Dentro de casa, aproxime-se da cama e aperte E para dormir.
 
-O código C# está na branch main. Para editar e testar: `./scripts/run.sh`. O script compila novamente antes de abrir o jogo.
+Código atualizado na branch main. Para editar e testar, execute `./scripts/run.sh`.
 
-Validação: build sem avisos, testes de regras e saves, abertura gráfica da fazenda e da vila com Xvfb, e verificação do executável com runtime incluído. Não foi testado em todas as distribuições/GPU Linux.
+Validação: build sem avisos, verificações de regras/câmera/colisões/saves, renderização da fazenda, vila e interiores, e percurso real com teclado e mouse. Não foi validado em todas as distribuições/GPU Linux. Ainda não há multiplayer ou casamento.

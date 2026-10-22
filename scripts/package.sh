@@ -5,7 +5,8 @@ cd "$(dirname "$0")/.."
 ./scripts/dotnet.sh publish src/ValeDoSol -c Release -r linux-x64 --self-contained true \
   -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true \
   -p:EnableCompressionInSingleFile=true -p:PublishTrimmed=true -o build/csharp-linux
-name=Vale-do-Sol-CSharp-3.0.0-Linux-x86_64
+version=$(sed -n 's/.*<Version>\([^<]*\)<\/Version>.*/\1/p' src/ValeDoSol/ValeDoSol.csproj)
+name=Vale-do-Sol-CSharp-$version-Linux-x86_64
 mkdir -p "build/package/$name" release
 install -m 755 build/csharp-linux/ValeDoSol "release/$name"
 install -m 755 build/csharp-linux/ValeDoSol "build/package/$name/ValeDoSol"

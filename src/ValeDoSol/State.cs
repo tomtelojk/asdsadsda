@@ -3,14 +3,15 @@ using System.Text.Json.Serialization;
 namespace ValeDoSol;
 
 public struct Plot { public bool tilled, watered; public int crop, growth; }
-public enum Scene { FARM, VILLAGE }
+public enum Scene { FARM, VILLAGE, HOME, SHOP }
 public class State
 {
+    public int edition = 4;
     [JsonRequired] public int version = 3, day = 1, minute = 480, coins = 120, energy = 100, max_energy = 100;
     [JsonRequired] public int[] seeds = [10, 5, 0], inventory = [0, 0, 0];
     public int wood, stone, fish, harvested, selected, watering_level = 1;
     public Scene scene;
-    [JsonRequired] public Point player = new(464, 400);
+    [JsonRequired] public Point player = new(400, 288);
     [JsonRequired] public Plot[] plots = Enumerable.Range(0, 48).Select(i => new Plot { tilled = i < 16, crop = i < 3 ? 0 : -1, growth = i < 3 ? 1 : 0 }).ToArray();
     [JsonRequired] public int[] friendship = new int[4], talked_day = new int[4], gifted_day = new int[4];
     public uint met, claimed, gathered, tutorial, rng = 4871;
@@ -25,8 +26,8 @@ public record Resource(Scene scene, int x, int y, int type);
 internal partial class SaveContext : JsonSerializerContext { }
 public static class Logic
 {
-    public const int WORLD_W = 1120, WORLD_H = 704, MAX_PATH = 800;
-    public const Scene FARM = Scene.FARM, VILLAGE = Scene.VILLAGE;
+    public const int WORLD_W = 2048, WORLD_H = 1408, MAX_PATH = 3000;
+    public const Scene FARM = Scene.FARM, VILLAGE = Scene.VILLAGE, HOME = Scene.HOME, SHOP = Scene.SHOP;
     public static readonly Crop[] CROPS = [new("Cenoura", 3, 15, 14, 0xef9c42), new("Nabo", 2, 10, 9, 0xeee1bc), new("Morango", 4, 25, 23, 0xdc6c79)];
     public static readonly Villager[] NPCS = [
     new("Lia","Dona do armazém","Você deve ser a nova pessoa da Fazenda Girassol! Eu sou a Lia. A vila precisava desse seu jeito de recomeçar.",["Minha avó dizia: uma semente é uma promessa pequena. Regue as suas todos os dias, combinado?","Sempre tem espaço para uma conversa e um café por aqui. Como vai a sua horta?"],0xd69a70,0x694b3d,new(336,336),new(432,400)),
@@ -42,7 +43,7 @@ public static class Logic
     public static bool state_valid(State? s)
     {
         if (s is null || s.version != 3 || !In(s.day, 1, 100000) || !In(s.minute, 360, 1440) || !In(s.coins, 0, 1_000_000_000) || !In(s.max_energy, 100, 200) || !In(s.energy, 0, s.max_energy) || !Enum.IsDefined(s.scene)) return false;
-        if (!float.IsFinite(s.player.x) || !float.IsFinite(s.player.y) || s.player.x < 16 || s.player.x > 1104 || s.player.y < 32 || s.player.y > 680) return false;
+        if (!float.IsFinite(s.player.x) || !float.IsFinite(s.player.y) || s.player.x < 16 || s.player.x > world_size(s.scene).x - 16 || s.player.y < 32 || s.player.y > world_size(s.scene).y - 24) return false;
         if (s.seeds?.Length != 3 || s.inventory?.Length != 3 || s.plots?.Length != 48 || s.friendship?.Length != 4 || s.talked_day?.Length != 4 || s.gifted_day?.Length != 4) return false;
         if (s.seeds.Any(n => !In(n, 0, 10_000_000)) || s.inventory.Any(n => !In(n, 0, 10_000_000)) || s.plots.Any(p => !In(p.crop, -1, 2) || !In(p.growth, 0, 100000))) return false;
         if (s.friendship.Any(n => !In(n, 0, 5)) || s.talked_day.Any(n => !In(n, 0, s.day)) || s.gifted_day.Any(n => !In(n, 0, s.day))) return false;
@@ -81,14 +82,36 @@ public static class Logic
     public static float random_unit(State s) { s.rng = (uint)((ulong)s.rng * 16807u % 2147483647u); return (s.rng - 1) / 2147483646f; }
     public static Point plot_position(int i) => new(544 + i % 8 * 32, 256 + i / 8 * 32);
     public static int plot_at(float x, float y) { int c = (int)MathF.Floor(x / 32) - 17, r = (int)MathF.Floor(y / 32) - 8; return c >= 0 && c < 8 && r >= 0 && r < 6 ? r * 8 + c : -1; }
-    public static bool blocked(Scene scene, float x, float y) { if (x < 16 || x > 1104 || y < 32 || y > 680) return true; int tx = (int)(x / 32), ty = (int)(y / 32); foreach (var b in scene == FARM ? FARM_BUILDINGS : VILLAGE_BUILDINGS) if (tx >= b.x && tx < b.x + b.w && ty >= b.y + 2 && ty < b.y + b.h) return true; int px = scene == FARM ? 26 : 25; if (tx >= px && tx < 32 && ty >= 16 && ty < 20) return true; if (scene == VILLAGE && tx >= 15 && tx <= 18 && ty >= 14 && ty <= 15) return true; return (scene == FARM ? FARM_TREES : VILLAGE_TREES).Any(t => Math.Abs(x - (t[0] * 32 + 16)) < 14 && Math.Abs(y - (t[1] * 32 + 20)) < 13); }
+
+    public static Point world_size(Scene scene) => scene switch { Scene.HOME => new(640, 480), Scene.SHOP => new(704, 512), _ => new(WORLD_W, WORLD_H) };
+    public static Rectangle[] water_bodies(Scene scene) => scene is FARM or VILLAGE ? [new((scene == FARM ? 26 : 25) * 32, 512, (scene == FARM ? 6 : 7) * 32, 128), new(1408, 896, 384, 256)] : [];
+    public static Rectangle[] interior_solids(Scene scene) => scene switch
+    {
+        HOME => [new(432, 96, 112, 128), new(112, 112, 96, 64), new(48, 48, 96, 64), new(512, 288, 64, 48)],
+        SHOP => [new(224, 208, 256, 48), new(48, 96, 96, 256), new(560, 96, 96, 256)],
+        _ => []
+    };
+    static readonly int[][] FarmForest = BuildForest(FARM), VillageForest = BuildForest(VILLAGE);
+    static int[][] BuildForest(Scene scene) { var trees = (scene == FARM ? FARM_TREES : VILLAGE_TREES).ToList(); for (int i = 0; i < 150; i++) { int x = (96 + i * 239 % 1856) / 32 * 32 + 16, y = (64 + i * 337 % 1248) / 32 * 32 + 20; if (x < 1120 && y < 736 || y > 316 && y < 440 || Math.Abs(x - 432) < 80 || Math.Abs(x - 1056) < 64) continue; if (water_bodies(scene).Any(w => x > w.x - 70 && x < w.x + w.width + 70 && y > w.y - 20 && y < w.y + w.height + 90)) continue; trees.Add([(x - 16) / 32, (y - 20) / 32]); } return trees.ToArray(); }
+    public static int[][] scene_trees(Scene scene) => scene == FARM ? FarmForest : scene == VILLAGE ? VillageForest : [];
+    public static bool blocked(Scene scene, float x, float y)
+    {
+        Point size = world_size(scene); if (!float.IsFinite(x) || !float.IsFinite(y) || x < 16 || x > size.x - 16 || y < 32 || y > size.y - 24) return true;
+        if (scene is HOME or SHOP) { if (x < 40 || x > size.x - 40 || y < 80 || y > size.y - 32) return true; return interior_solids(scene).Any(r => x >= r.x && x < r.x + r.width && y >= r.y && y < r.y + r.height); }
+        int tx = (int)(x / 32), ty = (int)(y / 32); foreach (var b in scene == FARM ? FARM_BUILDINGS : VILLAGE_BUILDINGS) if (tx >= b.x && tx < b.x + b.w && ty >= b.y + 2 && ty < b.y + b.h) return true;
+        if (water_bodies(scene).Any(r => x >= r.x && x < r.x + r.width && y >= r.y && y < r.y + r.height)) return true;
+        if (scene == VILLAGE && tx >= 15 && tx <= 18 && ty >= 14 && ty <= 15) return true;
+        return scene_trees(scene).Any(t => Math.Abs(x - (t[0] * 32 + 16)) < 14 && Math.Abs(y - (t[1] * 32 + 20)) < 13);
+    }
     public static int find_path(Scene scene, Point start, Point goal, Point[] output)
     {
-        if (!float.IsFinite(start.x) || !float.IsFinite(start.y) || !float.IsFinite(goal.x) || !float.IsFinite(goal.y) || blocked(scene, start.x, start.y) || blocked(scene, goal.x, goal.y)) return 0;
-        int sx = (int)(start.x / 32), sy = (int)(start.y / 32), gx = (int)(goal.x / 32), gy = (int)(goal.y / 32); if (!In(sx, 0, 34) || !In(gx, 0, 34) || !In(sy, 0, 21) || !In(gy, 0, 21)) return 0;
-        int[] parent = Enumerable.Repeat(-1, 770).ToArray(); Queue<int> queue = new(); int first = sy * 35 + sx, last = gy * 35 + gx; parent[first] = first; queue.Enqueue(first);
-        while (queue.TryDequeue(out int node)) { if (node == last) break; int x = node % 35, y = node / 35; foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }) { int nx = x + dx, ny = y + dy; if (!In(nx, 0, 34) || !In(ny, 0, 21)) continue; int next = ny * 35 + nx; if (parent[next] >= 0 || blocked(scene, nx * 32 + 16, ny * 32 + 16)) continue; parent[next] = node; queue.Enqueue(next); } }
-        if (parent[last] < 0) return 0; int count = 0; for (int n = last; n != first; n = parent[n]) { if (count >= output.Length) return 0; output[count++] = new(n % 35 * 32 + 16, n / 35 * 32 + 16); }
+        if (blocked(scene, start.x, start.y) || blocked(scene, goal.x, goal.y)) return 0;
+        Point size = world_size(scene); int cols = (int)size.x / 32, rows = (int)size.y / 32;
+        int sx = (int)(start.x / 32), sy = (int)(start.y / 32), gx = (int)(goal.x / 32), gy = (int)(goal.y / 32);
+        if (!In(sx, 0, cols - 1) || !In(gx, 0, cols - 1) || !In(sy, 0, rows - 1) || !In(gy, 0, rows - 1)) return 0;
+        int[] parent = Enumerable.Repeat(-1, cols * rows).ToArray(); Queue<int> queue = new(); int first = sy * cols + sx, last = gy * cols + gx; parent[first] = first; queue.Enqueue(first);
+        while (queue.TryDequeue(out int node)) { if (node == last) break; int x = node % cols, y = node / cols; foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }) { int nx = x + dx, ny = y + dy; if (!In(nx, 0, cols - 1) || !In(ny, 0, rows - 1)) continue; int next = ny * cols + nx; if (parent[next] >= 0 || blocked(scene, nx * 32 + 16, ny * 32 + 16)) continue; parent[next] = node; queue.Enqueue(next); } }
+        if (parent[last] < 0) return 0; int count = 0; for (int n = last; n != first; n = parent[n]) { if (count >= output.Length) return 0; output[count++] = new(n % cols * 32 + 16, n / cols * 32 + 16); }
         Array.Reverse(output, 0, count); return count;
     }
 }

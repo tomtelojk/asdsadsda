@@ -20,3 +20,5 @@ jobs:
         run: |
           xvfb-run -a ./scripts/dotnet.sh src/ValeDoSol/bin/Release/net10.0/ValeDoSol.dll --smoke --save-dir "$RUNNER_TEMP/vale-farm"
           xvfb-run -a ./scripts/dotnet.sh src/ValeDoSol/bin/Release/net10.0/ValeDoSol.dll --smoke --village --save-dir "$RUNNER_TEMP/vale-village"
+          xvfb-run -a ./scripts/dotnet.sh src/ValeDoSol/bin/Release/net10.0/ValeDoSol.dll --smoke --home --save-dir "$RUNNER_TEMP/vale-home"
+          xvfb-run -a ./scripts/dotnet.sh src/ValeDoSol/bin/Release/net10.0/ValeDoSol.dll --smoke --shop --save-dir "$RUNNER_TEMP/vale-shop"
