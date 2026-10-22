@@ -1,6 +1,6 @@
 # Arte e personagens
 
-A imagem enviada pelo jogador orientou as cores e o desenho dos novos personagens. As artes desta versão foram desenhadas originalmente em `src/ValeDoSol/Art.cs`; o jogo não recorta os personagens diretamente da imagem de referência.
+A imagem enviada pelo jogador orientou as cores e o desenho dos novos personagens. Os personagens desta versão são desenhados em `src/ValeDoSol/Art.cs`; o jogo não recorta os personagens diretamente da imagem de referência.
 
 ![Folha de sprites original](sprites-csharp.png)
 
@@ -15,8 +15,8 @@ O atlas mede 2048 × 1536 pixels, com 16 colunas e 12 linhas de células de 128 
 
 Os índices começam em zero. As células restantes são reservadas. `--export-art arquivo.png` exporta o atlas para inspeção; editar a imagem exportada não altera o jogo, pois a fonte dos desenhos nesta edição é `Art.cs`.
 
-Os retratos e as animações partilham as paletas de cada personagem. Construções, chão, água e interiores são desenhados em `World.cs`. A ordenação por profundidade usa a posição dos pés. Árvores à frente do personagem ficam translúcidas.
+Os retratos e as animações partilham as paletas de cada personagem. Construções, chão, água, árvores e interiores usam os PNGs originais do Liberated Pixel Cup (Lanea Zimmerman / Sharm, CC BY-SA 3.0), montados em `Scenery.cs` e `World.cs`. Os arquivos e a licença estão em `Resources/Lpc`. O código MIT e os desenhos originais dos personagens mantêm suas licenças separadas. O modelo `Map.cs` define tanto os limites de desenho quanto as colisões. `Physics.cs` usa a área dos pés e passos curtos, e a navegação considera a largura do personagem. A ordenação por profundidade usa a posição dos pés. Árvores à frente do personagem ficam translúcidas.
 
-As rotinas e falas ficam em `Social.cs`. Há compromissos por horário, planos diferentes para chuva e fim de semana e pequenos deslocamentos durante o trabalho. Os caminhos respeitam obstáculos. Ao reabrir a partida, os moradores começam no compromisso atual; suas posições intermediárias não são gravadas, mas as amizades, presentes e o contador de conversas são preservados.
+As rotinas e falas ficam em `Social.cs`. Há compromissos por horário, planos diferentes para chuva e fim de semana e pequenos deslocamentos durante o trabalho. Os caminhos respeitam obstáculos. Ao reabrir a partida, as posições e áreas dos moradores são preservadas, assim como amizades, presentes e o contador de conversas. As agendas têm horários e destinos próprios para cada morador, com transições pelas portas e visitas à fazenda.
 
 Para uma futura revisão visual, os materiais mais úteis são referências com indicação do que agradou, ou sprites PNG transparentes com dimensões e licença conhecidas. Novas animações devem manter o ponto dos pés alinhado entre os quadros.

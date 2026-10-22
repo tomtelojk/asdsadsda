@@ -7,24 +7,33 @@ public static class Social
     public const int Count = 8;
     static int Visit(State s, int npc) { int value = s.conversations[npc]; s.conversations[npc] = Math.Min(10_000_000, value + 1); return value; }
     static Point P(int x, int y) => new(x * 32 + 16, y * 32 + 16);
-    public static Appointment[] Schedule(int npc, State s)
+    static int cachedDay;
+    static readonly Dictionary<int, Appointment[]> plans = [];
+    public static Appointment[] Schedule(int npc, State s) { if (cachedDay != s.day) { plans.Clear(); cachedDay = s.day; } if (!plans.TryGetValue(npc, out var plan)) plans[npc] = plan = BuildSchedule(npc, s); return plan; }
+    static Appointment[] BuildSchedule(int npc, State s)
     {
-        bool weekend = (s.day - 1) % 7 >= 5;
-        Point work = NPCS[npc].morning, lunch = P(10 + npc * 2, 12), afternoon = NPCS[npc].afternoon, evening = P(11 + npc * 2, 17), home = P(7 + npc * 3, 9);
-        string activity = npc switch { 0 => "Atendendo no armazém", 1 => "Medindo tábuas na oficina", 2 => "Pescando no lago", 3 => "Anotando plantas", 4 => "Preparando a banca de pães", 5 => "Cuidando da horta de ervas", 6 => "Ensaiando uma canção", _ => "Lendo no jardim" };
-        if (npc == 0 && weekend) return [new(360, P(7, 9), "Preparando a feira"), new(480, new(352, 184), "Atendendo no armazém", SHOP), new(780, P(10, 13), "Visitando a feira"), new(1080, evening, "Encontrando os vizinhos"), new(1170, home, "Voltando para casa")];
-        if (npc == 0 && !weekend) return [new(360, P(7, 9), "Abrindo o armazém"), new(480, new(352, 184), activity, SHOP), new(1020, P(10, 12), "Passeando depois do trabalho"), new(1140, P(7, 9), "Voltando para casa")];
-        if (raining(s)) { Point[] shelter = [P(7, 8), P(26, 8), P(8, 8), P(17, 7), P(35, 8), P(19, 7), P(6, 8), P(42, 10)]; return [new(360, home, "Esperando a chuva passar"), new(540, shelter[npc], "Procurando abrigo"), new(780, shelter[npc], "Conversando junto à varanda"), new(1080, home, "Voltando para casa")]; }
-        if (weekend) return [new(360, home, "Começando o dia devagar"), new(540, P(10 + npc * 2, 13), "Visitando a feira"), new(750, lunch, "Almoçando na praça"), new(900, afternoon, "Passeando pelo vale"), new(1080, evening, "Encontrando os vizinhos"), new(1170, home, "Voltando para casa")];
-        return [new(360, home, "Saindo de casa"), new(480, work, activity), new(720, lunch, "Fazendo uma pausa para almoço"), new(840, afternoon, activity), new(1020, evening, "Conversando na praça"), new(1140, home, "Voltando para casa")];
+        bool weekend = (s.day - 1) % 7 >= 5; int variant = (s.day + npc) % 3;
+        Appointment A(int time, Scene scene, float x, float y, string activity) => new(time, Physics.Nearest(scene, new(x, y)), activity, scene);
+        Appointment[] plan = npc switch
+        {
+            0 => [A(360, Scene.SHOP, 352, 192, "Arrumando os produtos"), A(480, Scene.SHOP, 352, 200, "Atendendo no armazém"), A(weekend ? 780 : 1020, Scene.VILLAGE, 400, 448, "Tomando café com Dora"), A(1080, Scene.LIBRARY, 432, 240, "Visitando Otávio"), A(1170, Scene.SHOP, 512, 336, "Conferindo o estoque")],
+            1 => [A(360, Scene.WORKSHOP, 352, 288, "Preparando as ferramentas"), A(480, Scene.WORKSHOP, 192, 224, "Trabalhando no barco da Iara"), A(500, Scene.VILLAGE, 848, 336, "Buscando madeira na varanda"), A(560, Scene.FARM, 336, 400, "Visitando o novo fazendeiro"), A(690, Scene.BAKERY, 224, 336, "Buscando o almoço da Dora"), A(800, Scene.WORKSHOP, 496, 224, "Construindo o palco da Ceci"), A(1030, Scene.VILLAGE, 656, 576, "Encontrando Ceci na praça"), A(1180, Scene.WORKSHOP, 352, 320, "Guardando as ferramentas")],
+            2 => [A(360, Scene.COTTAGE, 448, 272, "Separando as iscas"), A(450, Scene.VILLAGE, 880, 688, "Procurando peixes na margem sul"), A(530, Scene.VILLAGE, 784, 496, "Pescando no cais"), A(650, Scene.VILLAGE, 1040, 688, "Trocando o ponto de pesca"), A(760, Scene.BAKERY, 432, 320, "Almoçando com Dora"), A(890, Scene.VILLAGE, 1360, 1120, "Explorando o lago do bosque"), A(1080, Scene.VILLAGE, 400, 592, "Contando histórias para Ceci"), A(1200, Scene.COTTAGE, 480, 256, "Limpando a vara de pesca")],
+            3 => [A(360, Scene.GREENHOUSE, 352, 256, "Organizando o caderno"), A(480, Scene.GREENHOUSE, 208, 224, "Estudando as sementes"), A(505, Scene.VILLAGE, 688, 272, "Examinando as mudas de Miguel"), A(600, Scene.FARM, 864, 448, "Observando a horta da fazenda"), A(770, Scene.VILLAGE, 464, 592, "Comparando notas no jardim"), A(880, Scene.LIBRARY, 384, 240, "Pesquisando os mapas antigos"), A(1040, Scene.VILLAGE, 1200, 816, "Catalogando flores do bosque"), A(1160, Scene.GREENHOUSE, 400, 256, "Guardando as amostras")],
+            4 => [A(360, Scene.BAKERY, 224, 192, "Assando os primeiros pães"), A(480, Scene.BAKERY, 400, 176, "Tirando uma fornada do forno"), A(492, Scene.VILLAGE, 1168, 336, "Abrindo a banca de pães"), A(590, Scene.SHOP, 512, 304, "Entregando broas para Lia"), A(720, Scene.VILLAGE, 416, 448, "Dividindo o almoço na praça"), A(850, Scene.BAKERY, 352, 304, "Preparando massa e biscoitos"), A(1035, Scene.LIBRARY, 480, 240, "Levando chá para Otávio"), A(1150, Scene.BAKERY, 224, 272, "Fechando a cozinha")],
+            5 => [A(360, Scene.GREENHOUSE, 512, 240, "Preparando as ervas"), A(465, Scene.VILLAGE, 720, 272, "Regando a horta de ervas"), A(550, Scene.VILLAGE, 432, 688, "Colhendo folhas no jardim"), A(690, Scene.COTTAGE, 352, 272, "Levando chá para Iara"), A(840, Scene.GREENHOUSE, 448, 256, "Separando mudas e etiquetas"), A(950, Scene.VILLAGE, 736, 720, "Cuidando das flores da margem"), A(1090, Scene.VILLAGE, 656, 592, "Descansando no banco da praça"), A(1190, Scene.GREENHOUSE, 352, 320, "Preparando chá para amanhã")],
+            6 => [A(360, Scene.COTTAGE, 352, 256, "Escrevendo uma melodia"), A(470, Scene.VILLAGE, 464, 432, "Escutando a vila acordar"), A(515, Scene.VILLAGE, 656, 592, "Ensaiando na praça"), A(650, Scene.WORKSHOP, 352, 288, "Planejando o palco com Bento"), A(780, Scene.VILLAGE, 1120, 336, "Visitando a banca da Dora"), A(920, Scene.VILLAGE, 400, 592, "Compondo à sombra das árvores"), A(1070, Scene.VILLAGE, 672, 576, "Tocando para os vizinhos"), A(1200, Scene.COTTAGE, 480, 272, "Guardando as partituras")],
+            _ => [A(360, Scene.LIBRARY, 352, 240, "Separando os livros do dia"), A(475, Scene.VILLAGE, 400, 544, "Lendo no jardim"), A(540, Scene.LIBRARY, 384, 240, "Restaurando um mapa do vale"), A(675, Scene.SHOP, 512, 320, "Conversando sobre as novidades"), A(820, Scene.VILLAGE, 1440, 816, "Caminhando pelo bosque"), A(960, Scene.LIBRARY, 480, 304, "Organizando cartas antigas"), A(1080, Scene.VILLAGE, 608, 608, "Ouvindo as histórias dos vizinhos"), A(1175, Scene.LIBRARY, 352, 240, "Escolhendo a leitura da noite")]
+        };
+        if (weekend && npc != 0) { plan[2] = A(plan[2].start, Scene.VILLAGE, 400 + npc * 52, 432 + npc % 2 * 176, npc == 6 ? "Ensaiando para a feira" : "Visitando a feira"); plan[4] = A(plan[4].start, Scene.VILLAGE, 400 + npc * 64, 688, "Passeando com os vizinhos"); }
+        if (raining(s) && npc != 0) for (int i = 1; i < plan.Length - 1; i++) if (plan[i].scene is Scene.VILLAGE or Scene.FARM) { Scene room = npc switch { 1 => Scene.WORKSHOP, 2 or 6 => Scene.COTTAGE, 3 or 5 => Scene.GREENHOUSE, 4 => Scene.BAKERY, _ => Scene.LIBRARY }; if (i % 2 == 0) room = npc % 2 == 0 ? Scene.BAKERY : Scene.LIBRARY; plan[i] = A(plan[i].start, room, 256 + npc % 3 * 96, 288, i % 2 == 0 ? "Visitando um amigo enquanto chove" : "Trabalhando abrigado da chuva"); }
+        // Each weekday changes one destination without synchronizing everyone's day.
+        if (!raining(s) && !weekend && npc > 0) { var visit = plan[4]; Point offset = new(visit.at.x + (variant - 1) * 32, visit.at.y); plan[4] = visit with { at = Physics.Nearest(visit.scene, offset) }; }
+        return plan;
     }
     public static int Phase(int npc, State s) { var plan = Schedule(npc, s); int phase = 0; for (int i = 0; i < plan.Length; i++) if (s.minute >= plan[i].start) phase = i; return phase; }
     public static Appointment Now(int npc, State s) => Schedule(npc, s)[Phase(npc, s)];
-    public static Point Walkable(Point desired)
-    {
-        for (int radius = 0; radius < 7; radius++) for (int y = -radius; y <= radius; y++) for (int x = -radius; x <= radius; x++) { if (Math.Abs(x) + Math.Abs(y) != radius) continue; Point at = new((int)(desired.x / 32) * 32 + 16 + x * 32, (int)(desired.y / 32) * 32 + 16 + y * 32); if (!blocked(VILLAGE, at.x, at.y)) return at; }
-        return new(432, 384);
-    }
+    public static Point Walkable(Point desired) => Physics.Nearest(Scene.VILLAGE, desired);
     static readonly string[][] Daily = [
         ["Separei sementes novas hoje. Minha avó guardava as melhores em envelopes com desenhos, porque vivia perdendo os óculos.", "Bento consertou a porta do armazém. Ela parou de ranger, mas agora sinto falta do aviso de que alguém chegou!", "Ceci quer tocar na feira. Estou tentando convencer Otávio a ler um poema entre as músicas.", "Dora me ensinou um pão de cenoura. Se a sua horta render, talvez a gente invente uma receita só da vila."],
         ["Estou restaurando um barco para Iara. Ela pediu que flutuasse; eu achei uma exigência bastante razoável.", "Otávio trouxe uma cadeira quebrada. Disse que ela tem quarenta anos de histórias. Vou tentar salvar todas.", "Meu primeiro trabalho foi a placa da vila. A letra torta é charme, segundo Lia. Eu aceito essa versão.", "Ceci pediu um palco. Fiz um desenho pequeno e ela devolveu um desenho enorme. Artistas, viu?"],

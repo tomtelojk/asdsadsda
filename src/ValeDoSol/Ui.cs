@@ -70,7 +70,7 @@ public static class Ui
         }
         frame(BagButton); tool_icon(3, 27, 658, .9); text("I", 58, 679, 13);
         if (g.dialog == D_NONE && hit(g, BagButton) && IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) { g.tab = 0; game_modal(g, D_MENU); }
-        if (g.location_timer > 0) { string name = s.scene switch { FARM => "Fazenda Girassol", VILLAGE => "Vila das Flores", HOME => "Sua casa", _ => "Armazém da Lia" }; int width = MeasureText(name, 20) + 44; frame(new((UI_W - width) / 2, 21, width, 40)); text(name, (UI_W - width) / 2 + 22, 30, 20); }
+        if (g.location_timer > 0) { string name = Map.Name(s.scene); int width = MeasureText(name, 20) + 44; frame(new((UI_W - width) / 2, 21, width, 40)); text(name, (UI_W - width) / 2 + 22, 30, 20); }
         if (g.dialog == D_NONE)
         {
             string hint = interaction_hint(g); if (hint.Length > 0) { int width = MeasureText(hint, 17) + 30; DrawRectangle((UI_W - width) / 2, 594, width, 29, new Color(47, 38, 24, 194)); text(hint, (UI_W - width) / 2 + 15, 600, 17, 0xffedc3); }

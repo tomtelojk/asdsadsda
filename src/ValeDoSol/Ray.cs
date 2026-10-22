@@ -84,6 +84,7 @@ public static class Ray
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] public static extern void UnloadTexture(Texture texture);
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] public static extern Image LoadImageFromTexture(Texture texture);
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)][return: MarshalAs(UnmanagedType.I1)] public static extern bool ExportImage(Image image, [MarshalAs(UnmanagedType.LPUTF8Str)] string path);
+    [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] public static extern Image LoadImageFromMemory([MarshalAs(UnmanagedType.LPUTF8Str)] string type, byte[] bytes, int size);
     static Font uiFont;
     public static bool SmoothText = true;
     public static int MeasureText(string text, int size) => SmoothText && uiFont.texture.id != 0 ? (int)Math.Ceiling(MeasureTextEx(uiFont, text, size, 0).x) : MeasureTextNative(text, size);

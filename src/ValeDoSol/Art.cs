@@ -24,7 +24,7 @@ public static class Art
         public void Glint(int x, int y, uint c) { if (Pixels[((Y + y) * width + X + x) * 4 + 3] != 0) Pixel(x, y, c); }
         public void Rect(int x, int y, int w, int h, uint c) { for (int dy = 0; dy < h; dy++) for (int dx = 0; dx < w; dx++) Pixel(x + dx, y + dy, c); }
         public void Ellipse(int x, int y, int rx, int ry, uint c) { for (int dy = -ry; dy <= ry; dy++) for (int dx = -rx; dx <= rx; dx++) if ((double)dx * dx / (rx * rx) + (double)dy * dy / (ry * ry) <= 1) Pixel(x + dx, y + dy, c); }
-        public void Shape(int x, int y, int rx, int ry, uint c, uint edge = 0x49352c) { Ellipse(x, y, rx, ry, edge); Ellipse(x, y - 1, rx - 1, ry - 1, c); }
+        public void Shape(int x, int y, int rx, int ry, uint c, uint edge = 0x49352c) { Ellipse(x, y, rx, ry, edge); for (int dy = -ry + 1; dy < ry; dy++) for (int dx = -rx + 1; dx < rx; dx++) { double nx = (double)dx / Math.Max(1, rx - 1), ny = (double)dy / Math.Max(1, ry - 1); if (nx * nx + ny * ny > 1) continue; int light = (int)Math.Round((-nx * 9 - ny * 8 - nx * nx * 5) / 4) * 4; Pixel(x + dx, y + dy - 1, Shade(c, light)); } }
         public void Line(int x, int y, int x2, int y2, uint c, int thick = 1) { int steps = Math.Max(Math.Abs(x2 - x), Math.Abs(y2 - y)); for (int i = 0; i <= steps; i++) Rect(x + (steps == 0 ? 0 : (x2 - x) * i / steps), y + (steps == 0 ? 0 : (y2 - y) * i / steps), thick, thick, c); }
         public void Leaf(int x, int y, int rx, int ry, uint c) { Shape(x, y, rx, ry, c, 0x315431); Ellipse(x - rx / 4, y - ry / 3, Math.Max(1, rx / 2), Math.Max(1, ry / 3), Shade(c, 19)); }
         public void Flower(int x, int y, uint c) { Ellipse(x, y - 2, 2, 2, c); Ellipse(x - 2, y, 2, 2, c); Ellipse(x + 2, y, 2, 2, c); Ellipse(x, y + 2, 2, 2, c); Rect(x, y, 2, 2, 0xf5c45e); }
@@ -122,7 +122,7 @@ public static class Art
     {
         DrawTexturePro(atlas, new(id % Columns * Cell, id / Columns * Cell, Cell, Cell), new(x - 64 * scale, y - 116 * scale, Cell * scale, Cell * scale), new(), 0, tint ?? WHITE);
     }
-    public static void Person(int npc, double x, double y, int face, double time = 0) { int frame = time <= 0 ? 0 : (int)(time * 8) % 4; Draw((npc + 1) * 16 + face * 4 + frame, x, y + 12, .65); }
+    public static void Person(int npc, double x, double y, int face, double time = 0) { int frame = time <= 0 ? 0 : (int)(time * 8) % 4; Draw((npc + 1) * 16 + face * 4 + frame, x, y, .78); }
     public static void PortraitDraw(int npc, double x, double y, double size) => DrawTexturePro(atlas, new((Portrait + npc + 1) % Columns * Cell, (Portrait + npc + 1) / Columns * Cell, Cell, Cell), new(x, y, size, size), new(), 0, WHITE);
     public static bool Export(string path) { Image image = LoadImageFromTexture(atlas); bool ok = ExportImage(image, path); UnloadImage(image); return ok; }
 }

@@ -6,127 +6,73 @@ namespace ValeDoSol;
 public readonly record struct RenderItem(double y, int type, int index);
 public static class World
 {
-    static double Mod(double x, double y) => x % y;
-    public static Color color_hex(long c) { return new Color((byte)(c >> 16), (byte)(c >> 8), (byte)c, 255); }
-    static void r(double x, double y, double w, double h, long color) { DrawRectangle((int)Math.Round(x), (int)Math.Round(y), (int)w, (int)h, color_hex(color)); }
-    static void label(string s, int x, int y, int size, long color) { int w = MeasureText(s, size); DrawText(s, x - w / 2 + 1, y + 1, size, new Color(41, 70, 56, 85)); DrawText(s, x - w / 2, y, size, color_hex(color)); }
-    static void tree(double x, double y, Game g) { DrawEllipse(x + 3, y + 8, 31, 10, new Color(42, 67, 28, 56)); bool obscures = Math.Abs(x - g.s.player.x) < 37 && g.s.player.y < y && g.s.player.y > y - 102; Art.Draw(Art.Tree, x, y + 3, .9, obscures ? new Color(255, 255, 255, 115) : WHITE); }
-    static void house(Building b)
+    public static Color color_hex(long c) => new((byte)(c >> 16), (byte)(c >> 8), (byte)c, 255);
+    static void R(double x, double y, double w, double h, long c) => DrawRectangle(x, y, w, h, color_hex(c));
+    static void Label(string s, double x, double y) { int w = MeasureText(s, 10); DrawRectangle(x - w / 2 - 4, y - 2, w + 8, 15, new Color(39, 33, 23, 165)); DrawText(s, x - w / 2, y, 10, color_hex(0xffedc6)); }
+    static bool Visible(Game g, double x, double y, int margin = 128) => Math.Abs(x - g.camera.x) < UI_W / (2 * CAMERA_ZOOM) + margin && Math.Abs(y - g.camera.y) < UI_H / (2 * CAMERA_ZOOM) + margin;
+    static void Person(Game g, int npc)
     {
-        int x = b.x * 32, y = b.y * 32, w = b.w * 32, h = b.h * 32; r(x - 9, y + h - 5, w + 24, 17, 0x8ca171); r(x, y + 45, w, h - 45, 0xe0c592);
-        for (int k = 55; k < h; k += 11) { r(x + 4, y + k, w - 8, 1, 0xc4a36d); r(x + 5, y + k + 1, w - 10, 1, 0xf0d8a3); }
-        r(x, y + 48, 9, h - 48, 0x765238); r(x + w - 9, y + 48, 9, h - 48, 0x765238); r(x + 3, y + 50, 2, h - 50, 0xb17d45); r(x + w - 6, y + 50, 2, h - 50, 0xb17d45);
-        r(x - 12, y + 40, w + 24, 13, 0x513d30); r(x - 11, y + 39, w + 22, 4, 0x99683f);
-        for (int row = 0; row < 8; row++) { int yy = y + 37 - row * 7, inset = row * 9; uint roof = Art.Shade(b.roof, row % 2 == 0 ? 8 : 0); r(x - 10 + inset, yy, w + 20 - inset * 2, 7, roof); for (int xx = x - 10 + inset; xx < x + w + 10 - inset; xx += 18) { int tw = Math.Min(17, x + w + 10 - inset - xx); r(xx, yy + 5, tw, 2, Art.Shade(b.roof, -28)); r(xx + 2, yy, Math.Max(1, tw - 4), 1, Art.Shade(b.roof, 32)); if ((xx / 18 + row) % 3 == 0) r(xx + 3, yy + 2, 4, 1, Art.Shade(b.roof, 18)); } }
-        r(x + 54, y - 18, w - 108, 4, Art.Shade(b.roof, 39));
-        r(x + w - 45, y - 7, 15, 42, 0xa78465); r(x + w - 49, y - 10, 23, 6, 0xc9ad8a); for (int cy = y; cy < y + 28; cy += 7) { r(x + w - 44, cy, 13, 1, 0x86634e); r(x + w - 39 + cy % 2 * 4, cy - 5, 1, 5, 0x86634e); }
-        for (int i = 0; i < 2; i++) { int xx = i != 0 ? x + w - 55 : x + 24; r(xx, y + 70, 30, 34, 0x8a7555); r(xx + 4, y + 74, 22, 25, 0x8db0ad); r(xx + 14, y + 74, 3, 25, 0xf5deb2); r(xx + 4, y + 85, 22, 3, 0xf5deb2); r(xx - 3, y + 104, 36, 6, 0xb49467); r(xx, y + 103, 6, 4, 0x68854d); r(xx + 18, y + 101, 5, 6, 0xd78c8e); }
-        int dx = x + w / 2 - 17; r(dx, y + h - 48, 34, 48, 0x785d43); r(dx + 4, y + h - 44, 26, 44, 0xa17e55); r(dx + 24, y + h - 24, 3, 3, 0xefd995); r(dx - 9, y + h, 52, 7, 0xb79e76); r(dx - 14, y + h + 7, 62, 5, 0xd0b88c);
-        r(x + w / 2 - 68, y + 50, 136, 18, 0x5b634a); label(b.name, x + w / 2, y + 54, 10, 0xfbf3d7);
-        if (b.type == 1) for (int k = 0; k < 8; k++) r(x + 8 + k * (w - 16) / 8, y + 47, (w - 16) / 8, 11, k % 2 != 0 ? 0xeee0b1 : 0x849a72);
-        if (b.type == 3) for (int k = 0; k < 5; k++) { r(x + 14 + k * 28, y + h - 13, 16, 13, 0xa47956); r(x + 17 + k * 28, y + h - 24, 9, 12, 0x6f954e); r(x + 14 + k * 28, y + h - 26, 15, 5, 0xd59ca6); }
+        Point p = npc < 0 ? g.s.player : g.npc_position[npc]; int face = npc < 0 ? g.facing : g.npc_facing[npc]; bool moving = npc < 0 ? g.moving : g.npc_at[npc] < g.npc_length[npc];
+        DrawEllipse(p.x, p.y + 1, 13, 4, new Color(29, 38, 25, 76)); Art.Person(npc, p.x, p.y, face, moving ? g.elapsed + (npc + 1) * .23 : 0);
+        if (npc >= 0 && Physics.Distance(p, g.s.player) < 90) Label(NPCS[npc].name, p.x, p.y - 65);
+        if (npc == 2 && !moving && g.s.scene == VILLAGE && p.y > 448) { DrawLineEx(new(p.x + 8, p.y - 17), new(p.x + 27, p.y - 42), 2, color_hex(0xa78350)); DrawLine(p.x + 27, p.y - 42, p.x + 44, p.y + 10, color_hex(0xe2cf9e)); }
     }
-    static void farmer(double x, double y, uint coat, uint hair, string? name, double time, bool player, int facing = 0)
+    static void Pond(Rectangle b, double time)
     {
-        DrawEllipse(x, y + 12, 13, 4, new Color(43, 58, 29, 66));
-        int npc = player ? -1 : Array.FindIndex(NPCS, n => n.coat == coat); Art.Person(npc, x, y, facing, time);
-        if (name != null) label(name, (int)x, (int)y - 53, 10, 0xfff2ce);
+        R(b.x - 5, b.y - 5, b.width + 10, b.height + 10, 0x556e3b); R(b.x - 2, b.y - 2, b.width + 4, b.height + 4, 0xa99568);
+        Scenery.Tile("water", new(32, 160, 32, 32), b); DrawRectangle(b.x, b.y, b.width, b.height, new Color(66, 122, 141, 75));
+        for (int i = 0; i < b.width * b.height / 1100; i++) { double x = b.x + 12 + i * 47 % ((int)b.width - 28) + Math.Sin(time * .8 + i) * 4, y = b.y + 14 + i * 37 % ((int)b.height - 24); R(x, y, 9, 1, 0x92c4bc); }
+        for (int i = 0; i < b.width / 28; i++) { R(b.x + i * 28 + 9, b.y + b.height - 4, 2, 11, 0x4d7137); R(b.x + i * 28 + 7, b.y + b.height - 8, 5, 7, 0x927147); }
+        R(b.x + 44, b.y - 16, 84, 23, 0x775939); for (int i = 0; i < 6; i++) { R(b.x + 46 + i * 14, b.y - 16, 12, 20, 0xbb965f); R(b.x + 48 + i * 14, b.y - 13, 8, 1, 0xd9b678); }
     }
-    static void crop(double x, double y, Plot p, double time)
+    static void Farm(Game g)
     {
-        if (p.crop < 0) return; int stage = p.growth == 0 ? 0 : p.growth >= CROPS[p.crop].days ? 2 : 1;
-        Art.Draw(Art.Crop + p.crop * 3 + stage, x, y + 7, .46);
-        if (stage == 2 && Math.Sin(time * 3 + x) > .7) { r(x + 12, y - 22, 1, 5, 0xffedac); r(x + 10, y - 20, 5, 1, 0xffedac); }
+        R(532, 244, 276, 212, 0x745131);
+        for (int i = 0; i < 48; i++) { Plot p = g.s.plots[i]; Point at = plot_position(i); R(at.x, at.y, 32, 32, p.tilled ? (p.watered ? 0x715238 : 0xa57948) : 0x769747); if (!p.tilled) Scenery.Draw("grass", new(32, 160, 32, 32), new(at.x, at.y, 32, 32)); if (p.tilled) for (int k = 0; k < 3; k++) { R(at.x + 2, at.y + 5 + k * 9, 28, 2, p.watered ? 0x594332 : 0x835e39); R(at.x + 3, at.y + 7 + k * 9, 25, 1, p.watered ? 0x836044 : 0xc19658); } if (p.crop >= 0) { int stage = p.growth == 0 ? 0 : p.growth >= CROPS[p.crop].days ? 2 : 1; Art.Draw(Art.Crop + p.crop * 3 + stage, at.x + 16, at.y + 29, .62); } if (g.hover == i && Physics.Distance(g.s.player, new(at.x + 16, at.y + 16)) < 78) DrawRectangleLinesEx(new(at.x + 1, at.y + 1, 30, 30), 1, color_hex(0xffe6b1)); }
+        for (int i = 0; i < 5; i++) { Art.Draw(Art.Fence, 550 + i * 60, 236, .65); Art.Draw(Art.Fence, 550 + i * 60, 488, .65); }
+        R(320, 286, 5, 33, 0x735539); R(304, 275, 34, 21, 0x995c41); R(307, 279, 28, 13, 0xc08a57); Label("VILA >", WORLD_W - 94, 328);
     }
-    static void pond_draw(Rectangle pond, double time, bool dock = false)
+    static void Square(Game g)
     {
-        int x = (int)pond.x, y = (int)pond.y, w = (int)pond.width, h = (int)pond.height;
-        r(x - 8, y + 8, w + 16, h - 16, 0x526d3b); r(x + 10, y - 7, w - 20, h + 14, 0x526d3b); r(x, y + 5, w, h - 10, 0x6baaa4); r(x + 8, y, w - 16, h, 0x6baaa4); r(x + 9, y + 9, w - 18, h - 18, 0x438f9d);
-        for (int i = 0; i < w * h / 1200; i++) { double xx = x + 14 + i * 47 % (w - 35) + Math.Sin(time + i) * 3, yy = y + 15 + i * 29 % (h - 30); r(xx, yy, 12, 2, 0x96cac0); }
-        r(x + 32, y + 28, 18, 8, 0x3b8054); r(x + 36, y + 23, 14, 7, 0x69a364); r(x + 42, y + 24, 4, 4, 0xf3c6b3);
-        for (int i = 0; i < w / 23; i++) { r(x + 4 + i * 23, y + h - 10, 3, 16, 0x557d38); r(x + 2 + i * 23, y + h - 13, 5, 7, 0x9a7942); }
-        if (dock) { r(x + 35, y - 18, 88, 25, 0xb08b54); for (int j = 0; j < 6; j++) r(x + 36 + j * 15, y - 18, 2, 25, 0x7b5b3c); r(x + 38, y - 24, 5, 33, 0x8e673e); r(x + 116, y - 24, 5, 33, 0x8e673e); }
+        Scenery.Tile("dirt", new(32, 160, 32, 32), new(432, 432, 288, 192));
+        Rectangle f = Map.Fountain; R(f.x - 5, f.y, f.width + 10, f.height + 6, 0x696d61); R(f.x, f.y - 5, f.width, f.height, 0xc5c3a6); R(f.x + 8, f.y + 4, f.width - 16, f.height - 14, 0x669ca7); R(f.x + 42, f.y - 27, 13, 48, 0xa7ad99); R(f.x + 35, f.y - 28, 27, 6, 0xe1ddbf); for (int i = 0; i < 4; i++) R(f.x + 44 + i * 2, f.y - 21 + Math.Sin(g.elapsed * 3 + i) * 4, 2, 10, 0xb9d5d0);
+        foreach (Point p in new[] { new Point(432, 576), new Point(656, 576), new Point(432, 448) }) { R(p.x - 28, p.y - 14, 56, 8, 0x7b5738); R(p.x - 28, p.y - 4, 56, 5, 0xb58b50); R(p.x - 24, p.y + 2, 5, 10, 0x62482f); R(p.x + 19, p.y + 2, 5, 10, 0x62482f); }
+        for (int i = 0; i < 6; i++) { int x = 400 + i * 64; DrawLine(x, 328, x + 64, 334, color_hex(0x8b7655)); DrawTriangle(new(x + 10, 329), new(x + 23, 343), new(x + 36, 332), color_hex(i % 2 == 0 ? 0xc77861 : 0xd2b56e)); }
+        for (int i = 0; i < 7; i++) { R(680 + i * 15, 248, 13, 19, 0x876341); Art.Draw(Art.Crop + 1, 686 + i * 15, 265, .35); }
+        Label("< FAZENDA", 94, 328);
     }
-    static void interior(Game g)
+    static void Interior(Game g)
     {
-        bool home = g.s.scene == HOME; Point size = world_size(g.s.scene); int w = (int)size.x, h = (int)size.y;
-        r(0, 0, w, h, 0x4c3023); r(24, 52, w - 48, h - 76, 0xb4814c);
-        for (int y = 64; y < h - 24; y += 24) for (int x = 32; x < w - 32; x += 64) { r(x + (y / 24 % 2) * 12, y, 62, 22, (x + y) % 3 == 0 ? 0xbc8c57 : 0xb3804e); r(x + 3, y + 3, 48, 1, 0xca9b66); }
-        r(24, 24, w - 48, 56, 0xe4bd80); r(24, 64, w - 48, 12, 0x805034); r(16, 16, 16, h - 32, 0x67442c); r(w - 32, 16, 16, h - 32, 0x67442c);
-        for (int x = 40; x < w - 40; x += 32) { r(x, 29, 2, 32, 0xcda56e); r(x, 72, 27, 3, 0xa57648); }
-        int door = home ? 320 : 352; r(32, h - 32, w - 64, 16, 0x66412c); r(door - 32, h - 36, 64, 28, 0xe1b26b); r(door - 36, h - 44, 72, 8, 0x97633b);
-        // Window, daylight and curtains.
-        r(256, 24, 96, 48, 0x765034); r(262, 29, 84, 35, 0x8dc6ce); r(302, 29, 4, 35, 0xefe0aa); r(262, 44, 84, 3, 0xefe0aa); r(250, 24, 10, 51, 0xbc705b); r(348, 24, 10, 51, 0xbc705b);
-        DrawRectangle(263, 80, 86, 140, new Color(255, 234, 152, 22));
-        if (home)
-        {
-            r(214, 220, 156, 90, 0x985447); r(220, 226, 144, 78, 0xb7755a); r(228, 233, 128, 63, 0xc78d66); r(240, 244, 104, 40, 0xb97756);
-            r(432, 96, 112, 132, 0x765036); r(440, 105, 96, 116, 0xe3c28d); r(447, 110, 82, 28, 0xf6e7be); r(441, 144, 94, 74, 0xa95648); for (int y = 148; y < 216; y += 16) r(445, y, 86, 2, 0xc8755a); r(476, 146, 4, 68, 0xe5b380); r(433, 222, 14, 13, 0x533822); r(530, 222, 13, 13, 0x533822);
-            r(112, 112, 96, 56, 0x8b5a32); r(117, 112, 86, 44, 0xbe8d54); r(120, 158, 8, 17, 0x70472b); r(192, 158, 8, 17, 0x70472b); r(142, 122, 24, 17, 0xe6c990); r(174, 119, 14, 16, 0x74985b);
-            r(48, 48, 96, 64, 0x716049); r(56, 61, 80, 40, 0x59513f); r(70, 74, 48, 29, 0x322d29); r(79, 91, 27, 10, 0xe59f4c); r(88, 82, 14, 18, 0xf4c96a); r(42, 106, 108, 9, 0x9c8761);
-            r(512, 288, 64, 48, 0x986a40); r(516, 293, 56, 37, 0xb58b51); r(519, 303, 50, 3, 0x795332); r(546, 300, 5, 8, 0xe0bb6f);
-            r(562, 94, 18, 25, 0x9a6543); r(556, 83, 30, 15, 0x6d954e); r(566, 72, 10, 17, 0x83aa5c);
-            farmer(g.s.player.x, g.s.player.y, 0xbc9a67, 0x765b42, null, g.moving ? g.elapsed : 0, true, g.facing);
-        }
-        else
-        {
-            for (int side = 0; side < 2; side++) { int x = side == 0 ? 48 : 560; for (int y = 104; y < 340; y += 64) { r(x, y, 96, 48, 0x855b37); r(x + 3, y + 3, 90, 36, 0xc6995b); r(x, y + 39, 96, 8, 0x65452e); for (int k = 0; k < 4; k++) { r(x + 10 + k * 20, y + 8, 12, 24, k % 2 == 0 ? 0x9aa05c : 0xcb8d55); r(x + 12 + k * 20, y + 10, 8, 7, 0xe6d19a); } } }
-            if (g.npc_scene[0] == SHOP) farmer(352, 184, NPCS[0].coat, NPCS[0].hair, null, 0, false);
-            r(224, 208, 256, 48, 0x815330); r(220, 202, 264, 15, 0xc99b5b); r(224, 250, 256, 8, 0x684329); for (int x = 232; x < 470; x += 32) r(x, 221, 2, 24, 0x996b3d); r(413, 183, 39, 21, 0x6b7152); r(418, 175, 29, 13, 0xc5c09a);
-            r(302, 382, 100, 47, 0x9d6247); r(308, 387, 88, 37, 0xc08b5b);
-            farmer(g.s.player.x, g.s.player.y, 0xbc9a67, 0x765b42, null, g.moving ? g.elapsed : 0, true, g.facing);
-        }
+        Scene scene = g.s.scene; Point size = Map.Size(scene); int w = (int)size.x, h = (int)size.y;
+        R(16, 16, w - 32, h - 32, 0x3c3028); Scenery.Tile("inside", new(0, 128, 32, 32), new(32, 80, w - 64, h - 112));
+        Color tint = scene switch { Scene.BAKERY => new(255, 228, 199), Scene.LIBRARY => new(221, 230, 206), Scene.WORKSHOP => new(228, 217, 199), _ => WHITE };
+        Scenery.Tile("inside", new(8, 16, 64, 48), new(32, 24, w - 64, 64), tint); R(32, 83, w - 64, 5, 0xd2c0a0); R(32, 88, w - 64, 5, 0x5e4a36);
+        R(24, 20, 8, h - 40, 0x5a4431); R(w - 32, 20, 8, h - 40, 0x5a4431); R(32, h - 32, w - 64, 8, 0x654a32);
+        for (int i = 0; i < 2; i++) { int x = 200 + i * 192; R(x - 5, 22, 74, 59, 0x5d4935); R(x, 26, 64, 48, g.s.minute >= 1080 ? 0x5a6e87 : 0x9bc0bf); R(x + 29, 26, 5, 48, 0xe1d6b1); R(x, 47, 64, 4, 0xe1d6b1); R(x - 6, 24, 9, 53, scene == Scene.BAKERY ? 0xb77e5d : 0x8b6f73); R(x + 61, 24, 9, 53, scene == Scene.BAKERY ? 0xb77e5d : 0x8b6f73); if (g.s.minute < 1080) DrawRectangle(x, 96, 64, 120, new Color(255, 227, 154, 15)); }
+        Point exit = Map.Exit(scene); R(exit.x - 30, h - 36, 60, 17, 0xb79966); R(exit.x - 36, h - 41, 72, 5, 0x735439);
+        Prop[] props = Map.Props(scene); foreach (Prop prop in props.Where(p => p.kind == Furnishing.Rug)) Scenery.Furniture(prop, g.elapsed);
+        List<RenderItem> items = []; for (int i = 0; i < props.Length; i++) if (props[i].kind != Furnishing.Rug) items.Add(new(props[i].bounds.y + props[i].bounds.height, 0, i)); for (int i = 0; i < Social.Count; i++) if (g.npc_scene[i] == scene) items.Add(new(g.npc_position[i].y, 1, i)); items.Add(new(g.s.player.y, 2, -1));
+        foreach (RenderItem item in items.OrderBy(i => i.y)) if (item.type == 0) Scenery.Furniture(props[item.index], g.elapsed); else Person(g, item.type == 2 ? -1 : item.index);
     }
     public static void world_draw(Game g)
     {
         State s = g.s; Scene scene = s.scene; double time = g.elapsed;
-        if (scene is HOME or SHOP) { interior(g); return; }
-        r(0, 0, WORLD_W, WORLD_H, 0x7ea653);
-        int minx = Math.Max(0, (int)(g.camera.x - UI_W / (2 * CAMERA_ZOOM) - 100) / 32), maxx = Math.Min(WORLD_W / 32, (int)(g.camera.x + UI_W / (2 * CAMERA_ZOOM) + 100) / 32 + 1), miny = Math.Max(0, (int)(g.camera.y - UI_H / (2 * CAMERA_ZOOM) - 100) / 32), maxy = Math.Min(WORLD_H / 32, (int)(g.camera.y + UI_H / (2 * CAMERA_ZOOM) + 100) / 32 + 1);
-        for (int y = miny; y < maxy; y++) for (int x = minx; x < maxx; x++) { uint n = (uint)(x * 73856093 ^ y * 19349663); r(x * 32, y * 32, 32, 32, n % 4 == 0 ? 0x7da450 : n % 4 == 1 ? 0x80a752 : 0x7ea653); r(x * 32 + n % 20 + 3, y * 32 + n % 23 + 3, 2, 4, 0x739847); if (n % 5 == 0) { r(x * 32 + 11, y * 32 + 21, 5, 2, 0x98b964); r(x * 32 + 13, y * 32 + 18, 2, 5, 0x98b964); } if (n % 19 == 0) { r(x * 32 + 19, y * 32 + 11, 4, 4, n % 2 == 0 ? 0xf0d18c : 0xdab0ba); r(x * 32 + 20, y * 32 + 15, 2, 5, 0x5a903c); } }
-        r(0, 344, WORLD_W, 72, 0xb18d50); r(0, 350, WORLD_W, 60, 0xd9b774);
-        if (scene == FARM) { r(397, 0, 66, WORLD_H, 0xb18d50); r(403, 0, 54, WORLD_H, 0xd9b774); r(159, 221, 52, 145, 0xd9b774); }
-        else { r(512, 180, 78, WORLD_H - 180, 0xb18d50); r(518, 180, 66, WORLD_H - 180, 0xd9b774); r(206, 245, 53, 120, 0xd9b774); r(833, 245, 53, 120, 0xd9b774); r(760, 375, 54, 168, 0xd9b774); }
-        r(1024, 382, 64, 650, 0xb18d50); r(1030, 382, 52, 650, 0xd9b774); r(1050, 992, 426, 48, 0xd9b774);
-        for (int i = 0; i < 180; i++) r(i * 127 % WORLD_W, 355 + i * 13 % 43, 5, 2, 0xc8a364);
-        for (int i = 0; i < 180; i++) { int xx = i * 73 % WORLD_W, yy = 351 + i * 17 % 56; r(xx, yy, 2 + i % 3, 1, i % 2 == 0 ? 0xe6c689 : 0xbe9b61); }
-        foreach (var pond in water_bodies(scene)) pond_draw(pond, time, scene == VILLAGE || pond.x > 1300);
-        if (scene == FARM)
-        {
-            r(529, 234, 283, 234, 0xa9864f); r(535, 240, 271, 222, 0x89643e);
-            for (int i = 0; i < 48; i++) { Plot p = s.plots[i]; Point at = plot_position(i); double x = at.x, y = at.y; r(x, y, 30, 30, p.tilled ? (p.watered ? 0x715238 : 0xa87945) : 0x829b4b); if (p.tilled) { for (int k = 0; k < 3; k++) r(x + 3, y + 6 + k * 8, 24, 2, p.watered ? 0x614832 : 0x8c603b); if (p.watered) { r(x + 3, y + 3, 2, 2, 0x8b9f91); r(x + 23, y + 21, 2, 2, 0x8b9f91); } } else r(x + 7, y + 11, 3, 5, 0x648b39); crop(x + 15, y + 20, p, time); if (g.hover == i && Math.Abs(s.player.x - (x + 16)) < 78 && Math.Abs(s.player.y - (y + 16)) < 78) DrawRectangleLinesEx(new(x, y, 30, 30), 1, color_hex(0xffe5a4)); }
-            for (int i = 0; i < 5; i++) { Art.Draw(Art.Fence, 550 + i * 60, 242, .65); Art.Draw(Art.Fence, 550 + i * 60, 492, .65); }
-            r(318, 280, 5, 31, 0x8d6339); r(307, 269, 28, 18, 0xb3704a); r(310, 272, 21, 11, 0xcf9661); r(333, 264, 3, 14, 0xe4c478); r(336, 264, 9, 5, 0xd3a65d);
-            for (int i = 0; i < 8; i++) { r(88 + i * 23, 250, 16, 12, 0x9c6a3c); r(91 + i * 23, 240, 10, 13, 0x558d3f); r(88 + i * 23, 237, 16, 7, i % 2 == 0 ? 0xe4b96c : 0xd8989d); }
-            r(WORLD_W - 120, 325, 6, 33, 0x835c35); r(WORLD_W - 150, 309, 73, 25, 0xd4aa65); label("VILA >", WORLD_W - 114, 317, 10, 0x614626);
-            for (int i = 0; i < 4; i++) { double x = 273 + Math.Sin(time * .5 + i) * 4, y = 62 - i * 14 - time * 3 % 14; DrawRectangle((int)x, (int)y, 12 + i * 3, 7, new Color(221, 213, 184, (byte)(75 - i * 14))); }
-        }
-        else
-        {
-            r(455, 417, 196, 126, 0xb3a283); for (int i = 0; i < 9; i++) r(460 + i % 3 * 63, 421 + i / 3 * 39, 58, 34, 0xcebb94);
-            r(502, 450, 105, 56, 0x8b8e78); r(509, 444, 91, 54, 0xd0c8a7); r(516, 451, 77, 37, 0x70b1b3); r(545, 426, 18, 47, 0xaaa98d); r(538, 421, 32, 9, 0xd9d3b7); r(548, 415, 12, 8, 0xe7dfbf); r(550, 407 + Math.Sin(time * 3) * 2, 7, 12, 0xbddbd0);
-            for (int i = 0; i < 3; i++) { int x = i == 1 ? 673 : 350, y = i == 2 ? 540 : 440; r(x, y, 53, 9, 0xa57b46); r(x, y + 14, 53, 7, 0xc6985b); r(x + 4, y + 20, 5, 10, 0x755435); r(x + 44, y + 20, 5, 10, 0x755435); }
-            r(338, 293, 5, 42, 0x94744d); r(390, 293, 5, 42, 0x94744d); r(329, 271, 74, 47, 0x9b7952); r(334, 276, 64, 36, 0xd5bd87); r(341, 282, 15, 19, 0xf3e8c3); r(363, 281, 25, 24, 0xe9ddb4); label("< FAZENDA", 77, 321, 10, 0x66482a);
-        }
-        for (int i = 0; i < 6; i++) { var res = RESOURCES[i]; if (res.scene != scene || (s.gathered & (1u << i)) != 0) continue; int x = res.x * 32 + 16, y = res.y * 32 + 16; DrawEllipse(x, y + 10, 17, 5, new Color(38, 61, 30, 48)); Art.Draw(res.type == 0 ? Art.Log : Art.Rock, x, y + 12, .52); }
-        // Flower borders and planted shrubs follow the roads; no new invisible collision.
-        for (int i = 0; i < 32; i++) { double x = 115 + i * 59, y = i % 2 == 0 ? 326 : 438; if (Math.Abs(x - g.camera.x) < 540 && !blocked(scene, (float)x, (float)y) && (scene != FARM || plot_at((float)x, (float)y) < 0)) Art.Draw(i % 4 == 0 ? Art.Bush : Art.Flowers, x, y, i % 4 == 0 ? .46 : .33); }
-        for (int i = 0; i < 18; i++) { double x = 481 + i * 79 % 500, y = 80 + i * 131 % 180; if (!blocked(scene, (float)x, (float)y) && (scene != FARM || plot_at((float)x, (float)y) < 0)) Art.Draw(Art.Flowers, x, y, .32); }
-        if (scene == VILLAGE)
-        {
-            // Dora's market stall, an inhabited square, and a communal herb patch.
-            r(1080, 282, 90, 12, 0x714a2e); r(1086, 294, 6, 23, 0x8d633a); r(1158, 294, 6, 23, 0x8d633a); r(1076, 247, 98, 7, 0x634a32); for (int i = 0; i < 7; i++) r(1076 + i * 14, 253, 14, 14, i % 2 == 0 ? 0xd3a05e : 0xf0d69a); for (int i = 0; i < 6; i++) { DrawEllipse(1090 + i * 12, 280, 6, 4, color_hex(0xd4a257)); r(1088 + i * 12, 277, 4, 1, 0xf3d08c); }
-            for (int i = 0; i < 7; i++) { r(656 + i * 14, 232, 12, 16, 0x8d6941); Art.Draw(Art.Crop + 1, 662 + i * 14, 245, .29); }
-            for (int i = 0; i < 6; i++) { int x = 343 + i * 86; DrawLine(x, 250, x + 86, 257, color_hex(0x987746)); DrawTriangle(new(x + 15, 252), new(x + 30, 267), new(x + 42, 254), color_hex(i % 2 == 0 ? 0xc77b62 : 0x8c9f67)); }
-        }
-        var trees = scene_trees(scene); List<RenderItem> items = new(); for (int i = 0; i < trees.Length; i++) if (Math.Abs(trees[i][0] * 32 - g.camera.x) < UI_W / (2 * CAMERA_ZOOM) + 120 && Math.Abs(trees[i][1] * 32 - g.camera.y) < UI_H / (2 * CAMERA_ZOOM) + 120) items.Add(new(trees[i][1] * 32 + 20, 0, i));
-        Building[] buildings = scene == FARM ? FARM_BUILDINGS : VILLAGE_BUILDINGS; for (int i = 0; i < buildings.Length; i++) items.Add(new((buildings[i].y + buildings[i].h) * 32, 3, i));
-        if (scene == VILLAGE) for (int i = 0; i < Social.Count; i++) if (g.npc_scene[i] == VILLAGE) items.Add(new(g.npc_position[i].y, 1, i)); items.Add(new(s.player.y, 2, 0)); items.Sort((a, b) => a.y.CompareTo(b.y));
-        foreach (var item in items) { if (item.type == 0) tree(trees[item.index][0] * 32 + 16, trees[item.index][1] * 32 + 20, g); else if (item.type == 3) house(buildings[item.index]); else if (item.type == 1) { int n = item.index; bool near = Math.Abs(g.npc_position[n].x - s.player.x) < 90 && Math.Abs(g.npc_position[n].y - s.player.y) < 90; farmer(g.npc_position[n].x, g.npc_position[n].y, NPCS[n].coat, NPCS[n].hair, near ? NPCS[n].name : null, g.npc_at[n] < g.npc_length[n] ? time : 0, false, g.npc_facing[n]); } else farmer(s.player.x, s.player.y, 0xbc9a67, 0x765b42, null, g.moving ? time : 0, true, g.facing); }
-        if (g.action_timer > 0) { double phase = 1 - g.action_timer / .32f; Point a = s.player, p = g.action_target; if (g.tool == 2) { for (int i = 0; i < 5; i++) r(p.x - 13 + i * 6, p.y - 16 + phase * 18 + (i % 2) * 3, 2, 4, 0x8ccbd4); } else { DrawLineEx(new(a.x + 9, a.y - 12), new(p.x - 8, p.y - 10 - Math.Sin(phase * Math.PI) * 18), 3, color_hex(0x9a6838)); r(p.x - 14, p.y - 12 - Math.Sin(phase * Math.PI) * 18, 14, 5, g.tool == 0 ? 0x8da3a1 : 0xe3c783); } for (int i = 0; i < 4; i++) r(p.x - 12 + i * 8, p.y + phase * 5, 2, 2, 0xcba365); }
-        if (!raining(s)) for (int i = 0; i < 5; i++) { double x = 290 + i * 177 + Math.Sin(time * .3 + i) * 38, y = 282 + i * 59 + Math.Cos(time * .6 + i) * 14; DrawEllipse(x - 2, y, 2, 1 + Math.Abs(Math.Sin(time * 8 + i)) * 2, color_hex(i % 2 == 0 ? 0xf0d18b : 0xe8b2b1)); DrawEllipse(x + 2, y, 2, 1 + Math.Abs(Math.Sin(time * 8 + i)) * 2, color_hex(i % 2 == 0 ? 0xf0d18b : 0xe8b2b1)); }
-        double evening = Math.Max(0, (s.minute - 1020) / 400f); if (evening > 0) DrawRectangle(0, 0, WORLD_W, WORLD_H, new Color(28, 32, 66, (byte)(Math.Min(.52, evening) * 255)));
-        if (raining(s)) { DrawRectangle(0, 0, WORLD_W, WORLD_H, new Color(65, 99, 125, 43)); for (int i = 0; i < 190; i++) { double x = g.camera.x - UI_W / (2 * CAMERA_ZOOM) + Mod(i * 149 + time * 70, UI_W / 2 + 80), y = g.camera.y - UI_H / (2 * CAMERA_ZOOM) + Mod(i * 83 + time * 370, UI_H / 2 + 80); DrawRectangle(x, y, 1, 9, new Color(201, 227, 224, 125)); } }
-        if (g.fishing != 0) { Point p = s.player; Point a = new(p.x + 14, p.y - 14), b = new(p.x + 38, p.y - 35), c = new(p.x + 73, p.y + 30); DrawLineEx(a, b, 2, color_hex(0xd9c69c)); DrawLineEx(b, c, 1, color_hex(0xe1d6b0)); r(c.x - 3, c.y, 6, 5, g.fishing == 2 ? 0xf2ca79 : 0xe8c4aa); }
+        if (Map.Indoors(scene)) { Interior(g); return; }
+        int minx = Math.Max(0, (int)(g.camera.x - 520) / 32), maxx = Math.Min(WORLD_W / 32, (int)(g.camera.x + 520) / 32 + 1), miny = Math.Max(0, (int)(g.camera.y - 360) / 32), maxy = Math.Min(WORLD_H / 32, (int)(g.camera.y + 360) / 32 + 1);
+        R(0, 0, WORLD_W, WORLD_H, 0x75a044);
+        for (int y = miny; y < maxy; y++) for (int x = minx; x < maxx; x++) { uint hash = (uint)(x * 73856093 ^ y * 19349663); Scenery.Draw("grass", new(hash % 3 * 32, 160, 32, 32), new(x * 32, y * 32, 32, 32)); }
+        foreach (Rectangle road in Map.Roads(scene)) { if (road.x > g.camera.x + 560 || road.x + road.width < g.camera.x - 560 || road.y > g.camera.y + 400 || road.y + road.height < g.camera.y - 400) continue; Rectangle view = new(Math.Max(road.x, minx * 32), Math.Max(road.y, miny * 32), Math.Min(road.x + road.width, maxx * 32) - Math.Max(road.x, minx * 32), Math.Min(road.y + road.height, maxy * 32) - Math.Max(road.y, miny * 32)); if (view.width > 0 && view.height > 0) Scenery.Tile("dirt", new(32, 160, 32, 32), view); }
+        foreach (Rectangle pond in water_bodies(scene)) if (Visible(g, pond.x + pond.width / 2, pond.y + pond.height / 2, 256)) Pond(pond, time);
+        if (scene == FARM) Farm(g); else Square(g);
+        for (int i = 0; i < RESOURCES.Length; i++) { Resource res = RESOURCES[i]; if (res.scene == scene && (s.gathered & (1u << i)) == 0) Art.Draw(res.type == 0 ? Art.Log : Art.Rock, res.x * 32 + 16, res.y * 32 + 16, .58); }
+        for (int i = 0; i < 90; i++) { int x = 80 + i * 227 % 1880, y = 176 + i * 191 % 1120; if (Visible(g, x, y) && !blocked(scene, x, y) && (scene != FARM || plot_at(x, y) < 0) && !Map.Roads(scene).Any(r => Map.Touch(new(x - 12, y - 12, 24, 24), r))) Art.Draw(i % 4 == 0 ? Art.Bush : Art.Flowers, x, y, i % 4 == 0 ? .55 : .4); }
+        int[][] trees = Map.Trees(scene); List<RenderItem> items = []; for (int i = 0; i < trees.Length; i++) if (Visible(g, trees[i][0] * 32 + 16, trees[i][1] * 32 + 16)) items.Add(new(trees[i][1] * 32 + 16, 0, i));
+        Place[] places = Map.Places(scene).ToArray(); for (int i = 0; i < places.Length; i++) if (Visible(g, places[i].Door.x, places[i].Door.y, 256)) items.Add(new(places[i].Door.y - 16, 3, i));
+        for (int i = 0; i < Social.Count; i++) if (g.npc_scene[i] == scene && Visible(g, g.npc_position[i].x, g.npc_position[i].y)) items.Add(new(g.npc_position[i].y, 1, i)); items.Add(new(s.player.y, 2, -1));
+        foreach (RenderItem item in items.OrderBy(i => i.y)) { if (item.type == 0) { int x = trees[item.index][0] * 32 + 16, y = trees[item.index][1] * 32 + 16; bool obscures = Math.Abs(x - s.player.x) < 45 && s.player.y < y && s.player.y > y - 112; Scenery.Tree(x, y, item.index, new Color(255, 255, 255, obscures ? 100 : 255)); } else if (item.type == 3) Scenery.House(places[item.index].building, s.minute >= 1080); else Person(g, item.type == 2 ? -1 : item.index); }
+        if (g.action_timer > 0) { double phase = 1 - g.action_timer / .32; Point p = g.action_target; if (g.tool == 2) for (int i = 0; i < 5; i++) R(p.x - 12 + i * 6, p.y - 20 + phase * 24 + i % 2 * 3, 2, 4, 0x8dcbd2); else { DrawLineEx(new(s.player.x + 9, s.player.y - 18), new(p.x - 8, p.y - 10 - Math.Sin(phase * Math.PI) * 18), 3, color_hex(0x8e633c)); R(p.x - 14, p.y - 12 - Math.Sin(phase * Math.PI) * 18, 14, 5, 0xa4b1a4); } }
+        float evening = Math.Clamp((s.minute - 1020) / 550f, 0, .5f); if (evening > 0) DrawRectangle(0, 0, WORLD_W, WORLD_H, new Color(28, 32, 60, (int)(255 * evening)));
+        if (raining(s)) { DrawRectangle(0, 0, WORLD_W, WORLD_H, new Color(70, 92, 117, 42)); for (int i = 0; i < 150; i++) DrawRectangle(g.camera.x - 480 + (i * 149 + time * 70) % 960, g.camera.y - 280 + (i * 83 + time * 360) % 560, 1, 8, new Color(190, 218, 224, 130)); }
+        if (g.fishing != 0) { Point p = s.player; DrawLineEx(new(p.x + 12, p.y - 20), new(p.x + 40, p.y - 46), 2, color_hex(0xc4a06c)); DrawLine(p.x + 40, p.y - 46, p.x + 66, p.y + 16, color_hex(0xe4cf9c)); DrawCircle(p.x + 66, p.y + 16, 3, color_hex(g.fishing == 2 ? 0xf1d18a : 0xd8997b)); }
     }
 }

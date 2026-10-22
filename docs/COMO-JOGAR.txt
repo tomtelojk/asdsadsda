@@ -1,4 +1,4 @@
-VALE DO SOL 5.0 - ROSTOS DO VALE
+VALE DO SOL 6.0 - CAMINHOS DO VALE
 C# / .NET / raylib - Linux x86_64
 
 ABRIR
@@ -25,6 +25,8 @@ Colha com a cesta e venda para Lia.
 
 CASA E ARMAZÉM
 Aproxime-se de uma porta e aperte E para entrar.
+Oficina, padaria, biblioteca, casa das flores e casa do lago também abrem com E.
+Examine os móveis com E para conhecer suas histórias.
 Dentro de casa, aproxime-se do lado da cama e aperte E para dormir.
 Para sair, caminhe pela porta na parte de baixo da sala.
 No armazém, vá até a frente do balcão e aperte E para falar com Lia.
@@ -57,8 +59,13 @@ SAVES
 Pasta padrão: ~/.local/share/vale-do-sol-csharp/
 Ou $XDG_DATA_HOME/vale-do-sol-csharp/ quando configurado.
 Save principal: save.json. O menu Mochila oferece Criar backup/Restaurar.
-Saves C# das edições 3 e 4 continuam funcionando. Na primeira atualização, uma
-cópia do save antigo é guardada em save-before-v5.json.
+Saves C# das edições 3, 4 e 5 continuam funcionando. Na primeira atualização, uma
+cópia do save antigo é guardada em save-before-v6.json.
 Para outra partida: ./ValeDoSol --save-dir /caminho/para/a/partida
 
 Projeto: https://github.com/tomtelojk/asdsadsda
+
+ARTE E CRÉDITOS
+Cenários: Lanea Zimmerman (Sharm), Liberated Pixel Cup, CC BY-SA 3.0.
+Consulte LPC-art-and-license no pacote ou execute ./ValeDoSol --licenses.
+Código e personagens originais: MIT.

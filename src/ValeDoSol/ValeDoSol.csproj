@@ -6,11 +6,14 @@
     <RootNamespace>ValeDoSol</RootNamespace>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>5.0.0</Version>
+    <Version>6.0.0</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Resources/Lpc/*.png" LogicalName="ValeDoSol.Lpc.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Resources/Lpc/CC-BY-SA-3.0.txt" LogicalName="ValeDoSol.LpcLicense.txt" />
+    <EmbeddedResource Include="Resources/Lpc/CREDITS.txt" LogicalName="ValeDoSol.LpcCredits.txt" />
     <EmbeddedResource Include="../../LICENSE" LogicalName="ValeDoSol.License.txt" />
     <EmbeddedResource Include="Resources/FONT-LICENSE.txt" LogicalName="ValeDoSol.FontLicense.txt" />
     <EmbeddedResource Include="../../vendor/raylib-6.2_linux_amd64/LICENSE" LogicalName="ValeDoSol.RaylibLicense.txt" />

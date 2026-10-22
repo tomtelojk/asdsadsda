@@ -1,109 +1,85 @@
 # Vale do Sol 🌱
 
-Jogo de fazenda para **Linux em C# e .NET 10**, com raylib para janela e gráficos. A edição 5 renova os sprites e amplia a vila para oito moradores, com rotinas e conversas próprias. O protagonista é um fazendeiro masculino.
+RPG de fazenda para Linux, em **C# / .NET 10 / raylib**. A edição 6 reorganiza o mapa, corrige as colisões e troca os cenários simples por texturas de pixel art do **Liberated Pixel Cup**, com os créditos e a licença incluídos.
 
-![Fazenda e arte da edição 5](docs/fazenda-csharp.png)
+![Fazenda da edição 6](docs/fazenda-csharp.png)
 
-## Baixar e jogar
+**[Baixar a versão atual](https://github.com/tomtelojk/asdsadsda/releases/latest)**
 
-**[Downloads da versão atual](https://github.com/tomtelojk/asdsadsda/releases/latest)**
-
-Baixe `Vale-do-Sol-CSharp-5.0.0-Linux-x86_64`, marque **Permitir executar como programa** nas propriedades e abra. O `.tar.gz` contém o mesmo executável e as instruções.
+Baixe `Vale-do-Sol-CSharp-6.0.0-Linux-x86_64`, permita execução nas propriedades e abra. O `.tar.gz` contém o mesmo jogo, instruções e os arquivos de arte/licença LPC.
 
 ```sh
-chmod +x Vale-do-Sol-CSharp-5.0.0-Linux-x86_64
-./Vale-do-Sol-CSharp-5.0.0-Linux-x86_64
+chmod +x Vale-do-Sol-CSharp-6.0.0-Linux-x86_64
+./Vale-do-Sol-CSharp-6.0.0-Linux-x86_64
 ```
 
-O runtime .NET e a biblioteca gráfica estão incluídos. Não usa navegador, HTML ou Electron; não precisa de SDK ou FUSE para jogar. Requer Linux x86_64 com glibc 2.38+, sessão X11/XWayland e OpenGL 3.3, por exemplo Ubuntu 24.04. O .NET extrai bibliotecas em `~/.net/` na primeira execução.
+O .NET e a biblioteca gráfica estão incluídos. Requer Linux x86_64 com glibc 2.38+, X11/XWayland e OpenGL 3.3, como Ubuntu 24.04. Não precisa instalar SDK ou FUSE. Bibliotecas nativas são extraídas em `~/.net/` ao abrir pela primeira vez.
 
-## Uma vida no campo
+## Mapa e movimento
 
-- Explore fazenda e vila com mapas de 2048 × 1408, bosques, estradas e lagos.
-- Caminhe com câmera seguindo o personagem; corra com Shift.
-- Equipe ferramentas na barra e cultive os canteiros ao seu alcance.
-- Plante cenouras, nabos e morangos; regue, colha e venda.
-- Entre na sua casa, durma na cama e acorde para um novo dia.
-- Entre no armazém e converse com Lia no balcão para comprar e vender.
-- Conheça Lia, Bento, Iara, Theo, Dora, Miguel, Ceci e Otávio; converse, dê presentes e complete missões.
-- Acompanhe trabalho, almoço e passeios dos moradores, com horários diferentes em dias de chuva e fins de semana.
-- Escolha assuntos sobre trabalho, histórias pessoais e o dia; crie amizade para conhecer novas falas.
-- Veja retratos e a atividade atual de cada morador no menu R.
-- Melhore o regador, pesque e recolha madeira e pedras.
-- Acompanhe dia/noite, chuva e o calendário sazonal.
+- Portas, dimensões das casas, móveis e colisões vêm do mesmo modelo de mapa.
+- Árvores e suas copas são excluídas das estradas e acessos às casas.
+- Colisão pela área dos pés, movimento em pequenos passos e deslizamento junto a paredes; a animação do corpo não determina a colisão.
+- A busca de caminho considera a largura dos personagens, evita móveis e obstáculos e suaviza trechos livres.
+- Casa do jogador, armazém, oficina, padaria, biblioteca, casa das flores e casa do lago têm interiores acessíveis, móveis e objetos que podem ser examinados.
 
-Árvores, cercas, culturas, pedras, troncos e personagens usam sprites originais com margens transparentes. O cenário ganhou flores, uma banca de pães, uma horta de ervas e casas detalhadas.
+![Interior da casa](docs/casa-csharp.png)
 
-![Novos moradores e retratos](docs/moradores-csharp.png)
+![Biblioteca de Otávio](docs/biblioteca-csharp.png)
 
-![Conversas com assuntos escolhidos](docs/dialogo-csharp.png)
+## Moradores em movimento
 
-Mochila, diário e relações ficam em menus abertos por teclas. Os diálogos têm retratos e texto gradual. Arte e personagens originais, inspirados no gênero de RPGs de fazenda.
+Lia, Bento, Iara, Theo, Dora, Miguel, Ceci e Otávio têm **agendas próprias**, com horários e destinos distintos. Eles entram e saem pelas portas, fazem visitas, procuram outros pontos de pesca, cuidam de plantas e passeiam. Bento e Theo também visitam a fazenda.
 
-É uma edição pequena em desenvolvimento. As casas decorativas da vila não têm interiores acessíveis; menções a músicas nos diálogos fazem parte da história dos personagens. Ainda não há casamento, multiplayer ou música. As estações mudam no calendário; as culturas atuais podem crescer o ano todo. Os pacotes não incluem atualizador automático.
+Há pequenos deslocamentos durante as atividades, encontros na praça, planos para chuva e fins de semana. As posições e áreas dos moradores são gravadas: fechar e reabrir o jogo preserva o percurso em andamento. Os movimentos continuam sendo simulados quando o jogador está em outra área.
 
-## Controles
+![Movimento dos moradores no jogo](docs/vila-em-movimento.gif)
+
+Os diálogos têm apresentação, assuntos escolhidos pelo jogador, falas conforme amizade/clima/horário e respostas pessoais a presentes. O menu R mostra a atividade atual. O tempo pausa nos menus e diálogos; feche-os para observar os moradores andando.
+
+![Moradores e retratos](docs/moradores-csharp.png)
+
+## Cultivar e jogar
+
+Prepare a terra, plante cenouras, nabos e morangos, regue, durma e colha. Visite Lia para comprar sementes e vender produtos, melhore o regador com Bento e converse com Iara para ganhar uma vara de pesca. O fazendeiro é masculino.
 
 | Ação | Controle |
 | --- | --- |
 | Caminhar / correr | WASD ou setas / Shift |
-| Equipar ferramentas | 1–5 |
-| Equipar cenoura, nabo, morango e vara | 6, 7, 8, 9 |
-| Cultivar ao alcance do personagem | Clique ou Espaço |
-| Caminhar até um ponto | Botão direito; clique com Explorar selecionado |
-| Conversar, entrar, recolher ou usar a cama | E perto do alvo |
+| Ferramentas / sementes / vara | 1–5 / 6–8 / 9 |
+| Cultivar perto do personagem | Clique ou Espaço |
+| Caminhar até um ponto | Botão direito |
+| Conversar, entrar, examinar, recolher | E |
 | Pescar / puxar na fisgada | F / Espaço |
-| Assuntos de conversa: trabalho / pessoal / dia | Q / T / Y durante diálogos |
 | Mochila / diário / moradores | I ou Tab / J / R |
-| Ajuda / pausa | H / Escape |
-| Salvar / tela cheia | F5 / F11 |
+| Assuntos da conversa | Q / T / Y |
+| Ajuda / pausa / salvar / tela cheia | H / Escape / F5 / F11 |
 
-Siga a estrada à direita da fazenda até o limite do mapa para chegar à vila. Volte pela saída à esquerda da vila. Entre em portas com E; para sair de um interior, caminhe pela porta na parte de baixo. Lia atende das 8h às 17h nos dias úteis, e até 13h nos fins de semana. Fora do expediente ela passeia pela vila. O tempo para durante menus/diálogos e perda de foco. Às 22h começa um novo dia na sua casa.
+A estrada à direita da fazenda leva à vila; volte pela saída à esquerda da vila. Dentro das casas, caminhe até a porta inferior para sair. Durma ao lado da cama da sua casa. O dia termina às 22h. Lia trabalha no armazém até 17h em dias úteis e até 13h nos fins de semana; pode se deslocar dentro da loja enquanto atende.
 
-## Editar e testar em C#
+Ainda é um jogo pequeno em desenvolvimento. Não há casamento, multiplayer ou música; referências a músicas nas falas fazem parte da história de Ceci. As culturas atuais crescem em todas as estações.
 
-Requer .NET SDK 10 e bibliotecas gráficas do Linux. O instalador opcional coloca o SDK em uma pasta local do projeto, sem sudo:
-
-```sh
-./scripts/setup-dotnet.sh
-./scripts/run.sh
-```
-
-Edite os arquivos `.cs`, feche o jogo e execute `./scripts/run.sh` para recompilar e ver as mudanças. O primeiro build baixa raylib do repositório oficial e confere o SHA-256. O SDK local tem SHA-512 verificado.
+## Editar o projeto
 
 ```sh
-./scripts/test.sh       # regras, câmera, colisões, navegação, interiores e saves
-./scripts/build.sh      # compilar com avisos tratados como erros
-./scripts/package.sh    # gerar executável Linux com .NET incluído em release/
+./scripts/setup-dotnet.sh  # opcional: SDK local, sem sudo
+./scripts/run.sh          # recompila e abre o jogo
+./scripts/test.sh         # regras, física, interiores, rotinas e saves
+./scripts/package.sh      # executável Linux com runtime em release/
 ```
 
-`ValeDoSol.slnx` pode ser aberto em uma IDE com suporte a C#/.NET 10. Bibliotecas Linux: `libgl1`, `libx11-6`, `libxrandr2`, `libxi6`, `libxcursor1`, `libxinerama1`.
+Abra `ValeDoSol.slnx` em uma IDE com suporte a C#/.NET 10. O primeiro build baixa raylib e verifica SHA-256. O SDK local tem SHA-512 verificado.
 
-## Organização
+Em `src/ValeDoSol/`: `Map.cs` define casas, estradas, vegetação e móveis; `Physics.cs` contém colisão e navegação; `Social.cs` define as agendas e falas; `Scenery.cs` monta os cenários com texturas LPC; `Art.cs` desenha os personagens originais; `Game.cs` controla os atores e as interações. `State.cs` cuida de cultivo, economia e saves.
 
-- `State.cs`: estado, cultivo, economia, amizades, missões, colisões e busca de caminho.
-- `Game.cs`: controles, câmera, interações, cenas e passagem dos dias.
-- `Art.cs`: atlas original em pixel art, quadros de animação, cenários e retratos.
-- `Social.cs`: compromissos diários, trajetos e textos dos personagens.
-- `World.cs`: mapas, interiores, profundidade e animações.
-- `Ui.cs`: HUD, ferramentas, menus e diálogos.
-- `Ray.cs`: interop explícito com a biblioteca gráfica raylib.
-- `SelfTests.cs`: verificações executáveis sem display.
+## Saves e validação
 
-Todos estão em `src/ValeDoSol/`. SDK, dependências e saídas de build ficam fora do Git.
+A pasta padrão é `~/.local/share/vale-do-sol-csharp/`, ou `$XDG_DATA_HOME/vale-do-sol-csharp/`. O arquivo principal é `save.json`. A mochila oferece backup/restauração em `backup.json`. Antes de importar um save das edições 3–5, a edição 6 guarda o arquivo original em `save-before-v6.json`. Se uma construção ocupar a posição anterior, o jogador é colocado em um ponto livre próximo.
 
-## Saves
+`--save-dir DIRETORIO` escolhe outra partida. `--self-test` verifica as regras sem display. `--smoke --scene BAKERY --screenshot imagem.png` abre uma área por 60 quadros e salva uma captura. Os nomes das áreas são `FARM`, `VILLAGE`, `HOME`, `SHOP`, `WORKSHOP`, `BAKERY`, `LIBRARY`, `GREENHOUSE`, `COTTAGE`. Os flags antigos `--village`, `--home` e `--shop` continuam disponíveis nos testes.
 
-Pasta padrão: `~/.local/share/vale-do-sol-csharp/`, ou `$XDG_DATA_HOME/vale-do-sol-csharp/` se configurado. O save principal é `save.json`. A mochila oferece **Criar backup** e **Restaurar** usando `backup.json` nessa pasta.
+A validação inclui trajetos para todas as casas e móveis, verificação de copas fora das estradas, colisão em movimentos rápidos/diagonais e uma simulação dos oito moradores por um dia, incluindo deslocamentos entre áreas e persistência ao reabrir. Os workflows também abrem todas as áreas no Xvfb. Isso não substitui testes em todas as distribuições/GPU.
 
-Os saves C# das edições 3 e 4 continuam carregando, com expansão das relações de quatro para oito moradores. Antes da primeira atualização, o save antigo é copiado para `save-before-v5.json`. Se uma construção nova ocupar a posição salva, o personagem é reposicionado no ponto livre mais próximo. Para transferir, copie `backup.json` para a pasta de saves no destino e use Restaurar. Os saves do antigo navegador/Electron continuam separados e não são importados.
+## Créditos
 
-```sh
-./ValeDoSol --save-dir /caminho/para/uma/partida
-```
-
-## Validação gráfica
-
-`--self-test` executa as regras sem abrir janela. `--smoke` renderiza 60 quadros, salva e fecha; `--village`, `--home` e `--shop` selecionam áreas para esse teste. `--export-art arquivo.png` exporta a folha de sprites para inspeção; ela usa células de 128 × 128, em 16 colunas e 12 linhas. O desenho original está em `Art.cs`. `--screenshot arquivo.png` salva uma captura no final do smoke test. Os workflows usam Xvfb, o que não substitui testes em todas as distribuições/GPU.
-
-Código e arte originais sob MIT. raylib: zlib/libpng. A fonte DejaVu Sans e sua licença estão incluídas. O executável apresenta os avisos com `--licenses`.
+Código e personagens originais: MIT. Cenários LPC: **Lanea Zimmerman (Sharm)**, [Liberated Pixel Cup](https://github.com/OpenGameArt/LiberatedPixelCup), **CC BY-SA 3.0**. Os PNGs originais, os caminhos de origem e os avisos estão em [Resources/Lpc](src/ValeDoSol/Resources/Lpc). As artes LPC mantêm sua própria licença, separada do código. raylib: zlib/libpng. Fonte DejaVu Sans: licença incluída. O executável apresenta os avisos com `--licenses`.

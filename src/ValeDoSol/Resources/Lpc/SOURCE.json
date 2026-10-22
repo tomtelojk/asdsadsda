@@ -1,0 +1,23 @@
+{
+  "repository": "https://github.com/OpenGameArt/LiberatedPixelCup",
+  "commit": "f61104a1ecc54e7bce54b82ada7d7ba4c41bc524",
+  "files": {
+    "house.png": "tileset/original/Sharm/building-exterior/house.png",
+    "inside.png": "tileset/original/Sharm/building-interior/inside.png",
+    "country.png": "tileset/original/Sharm/building-interior/country.png",
+    "kitchen.png": "tileset/original/Sharm/building-interior/kitchen.png",
+    "cabinets.png": "tileset/original/Sharm/building-interior/cabinets.png",
+    "grass.png": "tileset/original/Sharm/outdoor/PNG/grass.png",
+    "dirt.png": "tileset/original/Sharm/outdoor/PNG/dirt.png",
+    "tree.png": "tileset/original/Sharm/outdoor/PNG/treetop.png",
+    "trunk.png": "tileset/original/Sharm/outdoor/PNG/trunk.png",
+    "water.png": "tileset/original/Sharm/outdoor/PNG/water.png",
+    "rock.png": "tileset/original/Sharm/outdoor/PNG/rock.png",
+    "chests.png": "tileset/original/Sharm/object/chests.png",
+    "barrel.png": "tileset/original/Sharm/object/barrel.png",
+    "CC-BY-SA-3.0.txt": "LICENSE-CC-BY-SA-3.0.txt",
+    "AUTHORS.md": "tileset/original/authors.md",
+    "UPSTREAM.md": "README.md"
+  },
+  "selectedLicense": "CC-BY-SA-3.0"
+}

@@ -3,10 +3,10 @@ using System.Text.Json.Serialization;
 namespace ValeDoSol;
 
 public struct Plot { public bool tilled, watered; public int crop, growth; }
-public enum Scene { FARM, VILLAGE, HOME, SHOP }
+public enum Scene { FARM, VILLAGE, HOME, SHOP, WORKSHOP, BAKERY, LIBRARY, GREENHOUSE, COTTAGE }
 public class State
 {
-    public int edition = 5;
+    public int edition = 6;
     [JsonRequired] public int version = 3, day = 1, minute = 480, coins = 120, energy = 100, max_energy = 100;
     [JsonRequired] public int[] seeds = [10, 5, 0], inventory = [0, 0, 0];
     public int wood, stone, fish, harvested, selected, watering_level = 1;
@@ -15,11 +15,15 @@ public class State
     [JsonRequired] public Plot[] plots = Enumerable.Range(0, 48).Select(i => new Plot { tilled = i < 16, crop = i < 3 ? 0 : -1, growth = i < 3 ? 1 : 0 }).ToArray();
     [JsonRequired] public int[] friendship = new int[Social.Count], talked_day = new int[Social.Count], gifted_day = new int[Social.Count];
     public int[] conversations = new int[Social.Count];
+    public Point[] npc_positions = new Point[Social.Count];
+    public Scene[] npc_scenes = Enumerable.Repeat(Scene.VILLAGE, Social.Count).ToArray();
+    public int npc_day = 1;
+    public bool npc_saved;
     public uint met, claimed, gathered, tutorial, rng = 4871;
     public bool rod;
 }
 public record Crop(string name, int days, int price, int sell, uint color);
-public record Villager(string name, string role, string first, string[] later, uint coat, uint hair, Point morning, Point afternoon);
+public record Villager(string name, string role, string first, string[] later);
 public record Building(int x, int y, int w, int h, int type, string name, uint roof);
 public record Resource(Scene scene, int x, int y, int type);
 [JsonSourceGenerationOptions(IncludeFields = true, WriteIndented = true)]
@@ -31,24 +35,22 @@ public static class Logic
     public const Scene FARM = Scene.FARM, VILLAGE = Scene.VILLAGE, HOME = Scene.HOME, SHOP = Scene.SHOP;
     public static readonly Crop[] CROPS = [new("Cenoura", 3, 15, 14, 0xef9c42), new("Nabo", 2, 10, 9, 0xeee1bc), new("Morango", 4, 25, 23, 0xdc6c79)];
     public static readonly Villager[] NPCS = [
-    new("Lia","Dona do armazém","Você deve ser o novo fazendeiro da Fazenda Girassol! Eu sou a Lia. A vila precisava desse seu jeito de recomeçar.",["Minha avó dizia: uma semente é uma promessa pequena. Regue as suas todos os dias, combinado?","Sempre tem espaço para uma conversa e um café por aqui. Como vai a sua horta?"],0xd69a70,0x694b3d,new(336,336),new(432,400)),
- new("Bento","Carpinteiro","Bento. Carpinteiro, colecionador de pregos e péssimo contador de piadas. Se quiser melhorar seu regador, é comigo.",["Traga 8 madeiras e 60 moedas. Seu regador de cobre vai alcançar o canteiro escolhido e os quatro vizinhos.","Uma boa ferramenta dura anos. Uma amizade bem cuidada dura ainda mais."],0x819ca1,0x655e50,new(784,336),new(688,464)),
- new("Iara","Pescadora","O lago tem mais histórias do que peixes. Tome, uma vara antiga minha! Perto da água, aperte F e espere a fisgada.",["Quando aparecer AGORA, aperte Espaço. Se puxar antes ou depois, o peixe leva a isca e deixa a história.","Dias de chuva são os meus favoritos. O mundo fica quietinho e os peixes saem para conversar."],0xa28bb0,0x3e4e47,new(912,496),new(784,496)),
- new("Theo","Botânico","Sou Theo! Estou estudando o solo do vale. Três cenouras da sua horta seriam perfeitas para minha pesquisa.",["Pode levar o tempo que precisar. Cada coisa cresce no seu próprio ritmo por aqui.","Quando chove, deixe o regador em casa. A natureza também gosta de ajudar."],0x89a76b,0x9d714f,new(528,528),new(272,528)),
- new("Dora","Padeira","Sou Dora, da banca de pães. Você é o fazendeiro novo! Venha cedo qualquer dia; pão quentinho ajuda a enfrentar até uma horta teimosa.",["Aprendi a fazer pão com meu pai. A receita era simples: acordar cedo e nunca economizar no carinho.","Quero fazer uma torta com frutas de todas as estações. Primeiro preciso convencer Lia a me emprestar as formas."],0x9b5060,0xc3bab0,new(1120,304),new(656,560)),
- new("Miguel","Cuidador da horta de ervas","Miguel. Cuido das ervas do vale e ajudo quem precisa de uma pausa. Se me encontrar agachado num canteiro, pode falar: eu sempre perco a noção da hora.",["Minha avó tratava o jardim como parte da família. Fiquei com os livros dela e a mania de conversar com as plantas.","Theo e eu queremos organizar uma pequena horta comunitária. Um lugar para aprender e dividir o que cresce."],0xd4d8be,0x343034,new(656,272),new(720,592)),
- new("Ceci","Musicista","Ei! Sou Ceci. Se escutar alguém repetindo os mesmos três acordes, provavelmente sou eu tentando terminar uma música. Você chegou numa boa hora para a vila.",["Vim passar uma semana aqui e fiquei. O silêncio do vale me deu vontade de escrever músicas de novo.","Estou juntando coragem para tocar na feira. Bento faz o palco, Dora traz os pães e Otávio escolhe um poema."],0x398a87,0x47302d,new(400,560),new(688,432)),
- new("Otávio","Guardião das histórias","Bem-vindo, rapaz. Sou Otávio. Guardo livros, mapas e algumas histórias que ficaram sem dono. Sua fazenda já apareceu em muitas delas.",["Quando eu era pequeno, a estrada até sua fazenda parecia enorme. Algumas distâncias diminuem quando a gente ganha companhia.","Se encontrar uma carta antiga ou um nome riscado numa árvore, me conte. A história do vale está espalhada por aí."],0x8b6a4b,0xaba090,new(976,336),new(368,560))];
-    public static readonly Building[] FARM_BUILDINGS = [new(2, 2, 7, 5, 0, "Sua casa", 0xb97958)];
-    public static readonly Building[] VILLAGE_BUILDINGS = [new(4, 3, 7, 5, 1, "Armazém da Lia", 0xbb785a), new(23, 3, 7, 5, 2, "Oficina do Bento", 0x728b9a), new(14, 2, 6, 5, 3, "Casa das flores", 0xa88a9b), new(33, 3, 6, 5, 4, "Padaria da Dora", 0xab674c), new(39, 5, 6, 5, 4, "Casa dos livros", 0x7c7c96)];
+    new("Lia","Dona do armazém","Você deve ser o novo fazendeiro da Fazenda Girassol! Eu sou a Lia. A vila precisava desse seu jeito de recomeçar.",["Minha avó dizia: uma semente é uma promessa pequena. Regue as suas todos os dias, combinado?","Sempre tem espaço para uma conversa e um café por aqui. Como vai a sua horta?"]),
+ new("Bento","Carpinteiro","Bento. Carpinteiro, colecionador de pregos e péssimo contador de piadas. Se quiser melhorar seu regador, é comigo.",["Traga 8 madeiras e 60 moedas. Seu regador de cobre vai alcançar o canteiro escolhido e os quatro vizinhos.","Uma boa ferramenta dura anos. Uma amizade bem cuidada dura ainda mais."]),
+ new("Iara","Pescadora","O lago tem mais histórias do que peixes. Tome, uma vara antiga minha! Perto da água, aperte F e espere a fisgada.",["Quando aparecer AGORA, aperte Espaço. Se puxar antes ou depois, o peixe leva a isca e deixa a história.","Dias de chuva são os meus favoritos. O mundo fica quietinho e os peixes saem para conversar."]),
+ new("Theo","Botânico","Sou Theo! Estou estudando o solo do vale. Três cenouras da sua horta seriam perfeitas para minha pesquisa.",["Pode levar o tempo que precisar. Cada coisa cresce no seu próprio ritmo por aqui.","Quando chove, deixe o regador em casa. A natureza também gosta de ajudar."]),
+ new("Dora","Padeira","Sou Dora, da banca de pães. Você é o fazendeiro novo! Venha cedo qualquer dia; pão quentinho ajuda a enfrentar até uma horta teimosa.",["Aprendi a fazer pão com meu pai. A receita era simples: acordar cedo e nunca economizar no carinho.","Quero fazer uma torta com frutas de todas as estações. Primeiro preciso convencer Lia a me emprestar as formas."]),
+ new("Miguel","Cuidador da horta de ervas","Miguel. Cuido das ervas do vale e ajudo quem precisa de uma pausa. Se me encontrar agachado num canteiro, pode falar: eu sempre perco a noção da hora.",["Minha avó tratava o jardim como parte da família. Fiquei com os livros dela e a mania de conversar com as plantas.","Theo e eu queremos organizar uma pequena horta comunitária. Um lugar para aprender e dividir o que cresce."]),
+ new("Ceci","Musicista","Ei! Sou Ceci. Se escutar alguém repetindo os mesmos três acordes, provavelmente sou eu tentando terminar uma música. Você chegou numa boa hora para a vila.",["Vim passar uma semana aqui e fiquei. O silêncio do vale me deu vontade de escrever músicas de novo.","Estou juntando coragem para tocar na feira. Bento faz o palco, Dora traz os pães e Otávio escolhe um poema."]),
+ new("Otávio","Guardião das histórias","Bem-vindo, rapaz. Sou Otávio. Guardo livros, mapas e algumas histórias que ficaram sem dono. Sua fazenda já apareceu em muitas delas.",["Quando eu era pequeno, a estrada até sua fazenda parecia enorme. Algumas distâncias diminuem quando a gente ganha companhia.","Se encontrar uma carta antiga ou um nome riscado numa árvore, me conte. A história do vale está espalhada por aí."])];
     public static readonly Resource[] RESOURCES = [new(FARM, 10, 15, 0), new(FARM, 7, 13, 0), new(FARM, 16, 18, 0), new(VILLAGE, 21, 18, 0), new(FARM, 15, 15, 1), new(FARM, 30, 12, 1)];
-    public static readonly int[][] FARM_TREES = [[1, 3], [11, 2], [14, 2], [17, 2], [20, 2], [23, 2], [27, 2], [31, 3], [33, 5], [2, 11], [10, 10], [2, 18], [6, 19], [10, 18], [32, 19], [22, 20]];
-    public static readonly int[][] VILLAGE_TREES = [[1, 4], [2, 2], [12, 2], [22, 2], [32, 3], [33, 7], [2, 12], [4, 18], [8, 20], [19, 20], [33, 20], [21, 7]];
     static bool In(int n, int min, int max) => n >= min && n <= max;
     public static bool state_valid(State? s)
     {
-        if (s is null || s.version != 3 || s.edition != 5 || !In(s.day, 1, 100000) || !In(s.minute, 360, 1440) || !In(s.coins, 0, 1_000_000_000) || !In(s.max_energy, 100, 200) || !In(s.energy, 0, s.max_energy) || !Enum.IsDefined(s.scene)) return false;
+        if (s is null || s.version != 3 || s.edition != 6 || !In(s.day, 1, 100000) || !In(s.minute, 360, 1440) || !In(s.coins, 0, 1_000_000_000) || !In(s.max_energy, 100, 200) || !In(s.energy, 0, s.max_energy) || !Enum.IsDefined(s.scene)) return false;
         if (!float.IsFinite(s.player.x) || !float.IsFinite(s.player.y) || s.player.x < 16 || s.player.x > world_size(s.scene).x - 16 || s.player.y < 32 || s.player.y > world_size(s.scene).y - 24) return false;
+        if (s.npc_positions?.Length != Social.Count || s.npc_scenes?.Length != Social.Count || s.npc_day < 1 || s.npc_day > s.day) return false;
+        if (s.npc_saved && s.npc_positions.Where((p, i) => !Enum.IsDefined(s.npc_scenes[i]) || !float.IsFinite(p.x) || !float.IsFinite(p.y) || p.x < 12 || p.y < 12 || p.x > Map.Size(s.npc_scenes[i]).x || p.y > Map.Size(s.npc_scenes[i]).y).Any()) return false;
         if (s.seeds?.Length != 3 || s.inventory?.Length != 3 || s.plots?.Length != 48 || s.friendship?.Length != Social.Count || s.talked_day?.Length != Social.Count || s.gifted_day?.Length != Social.Count || s.conversations?.Length != Social.Count) return false;
         if (s.seeds.Any(n => !In(n, 0, 10_000_000)) || s.inventory.Any(n => !In(n, 0, 10_000_000)) || s.plots.Any(p => !In(p.crop, -1, 2) || !In(p.growth, 0, 100000))) return false;
         if (s.friendship.Any(n => !In(n, 0, 5)) || s.talked_day.Any(n => !In(n, 0, s.day)) || s.gifted_day.Any(n => !In(n, 0, s.day))) return false;
@@ -61,7 +63,7 @@ public static class Logic
     }
     public static bool state_load(out State result, string path)
     {
-        result = new(); try { if (new FileInfo(path).Length > 200000) return false; string raw = File.ReadAllText(path); var s = JsonSerializer.Deserialize(raw, SaveContext.Default.State); using var meta = JsonDocument.Parse(raw); if (s is not null && !meta.RootElement.TryGetProperty("edition", out _)) s.edition = 3; if (s is not null && s.edition is 3 or 4 && s.friendship?.Length == 4 && s.talked_day?.Length == 4 && s.gifted_day?.Length == 4) { Array.Resize(ref s.friendship, Social.Count); Array.Resize(ref s.talked_day, Social.Count); Array.Resize(ref s.gifted_day, Social.Count); s.conversations = new int[Social.Count]; s.edition = 5; } if (s is not null && s.edition is >= 3 and <= 5) s.edition = 5; if (!state_valid(s)) return false; result = s!; return true; } catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException or NotSupportedException) { return false; }
+        result = new(); try { if (new FileInfo(path).Length > 200000) return false; string raw = File.ReadAllText(path); var s = JsonSerializer.Deserialize(raw, SaveContext.Default.State); using var meta = JsonDocument.Parse(raw); if (s is not null && !meta.RootElement.TryGetProperty("edition", out _)) s.edition = 3; if (s is not null && s.edition is 3 or 4 && s.friendship?.Length == 4 && s.talked_day?.Length == 4 && s.gifted_day?.Length == 4) { Array.Resize(ref s.friendship, Social.Count); Array.Resize(ref s.talked_day, Social.Count); Array.Resize(ref s.gifted_day, Social.Count); s.conversations = new int[Social.Count]; s.edition = 6; } if (s is not null && s.edition is >= 3 and <= 6) s.edition = 6; if (!state_valid(s)) return false; result = s!; return true; } catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException or NotSupportedException) { return false; }
     }
     public static bool raining(State s) => s.day % 4 == 0;
     public static int next_day(State s) { int grown = 0; foreach (ref Plot p in s.plots.AsSpan()) { if (p.crop >= 0 && (p.watered || raining(s))) { p.growth = Math.Min(CROPS[p.crop].days, p.growth + 1); grown++; } p.watered = false; } s.day = Math.Min(100000, s.day + 1); s.minute = 480; s.energy = s.max_energy; s.gathered = 0; if (raining(s)) foreach (ref Plot p in s.plots.AsSpan()) if (p.tilled) p.watered = true; return grown; }
@@ -88,35 +90,10 @@ public static class Logic
     public static Point plot_position(int i) => new(544 + i % 8 * 32, 256 + i / 8 * 32);
     public static int plot_at(float x, float y) { int c = (int)MathF.Floor(x / 32) - 17, r = (int)MathF.Floor(y / 32) - 8; return c >= 0 && c < 8 && r >= 0 && r < 6 ? r * 8 + c : -1; }
 
-    public static Point world_size(Scene scene) => scene switch { Scene.HOME => new(640, 480), Scene.SHOP => new(704, 512), _ => new(WORLD_W, WORLD_H) };
-    public static Rectangle[] water_bodies(Scene scene) => scene is FARM or VILLAGE ? [new((scene == FARM ? 26 : 25) * 32, 512, (scene == FARM ? 6 : 7) * 32, 128), new(1408, 896, 384, 256)] : [];
-    public static Rectangle[] interior_solids(Scene scene) => scene switch
-    {
-        HOME => [new(432, 96, 112, 128), new(112, 112, 96, 64), new(48, 48, 96, 64), new(512, 288, 64, 48)],
-        SHOP => [new(224, 208, 256, 48), new(48, 96, 96, 256), new(560, 96, 96, 256)],
-        _ => []
-    };
-    static readonly int[][] FarmForest = BuildForest(FARM), VillageForest = BuildForest(VILLAGE);
-    static int[][] BuildForest(Scene scene) { var trees = (scene == FARM ? FARM_TREES : VILLAGE_TREES).ToList(); for (int i = 0; i < 150; i++) { int x = (96 + i * 239 % 1856) / 32 * 32 + 16, y = (64 + i * 337 % 1248) / 32 * 32 + 20; if (x < 1120 && y < 736 || y > 316 && y < 440 || Math.Abs(x - 432) < 80 || Math.Abs(x - 1056) < 64) continue; if (water_bodies(scene).Any(w => x > w.x - 70 && x < w.x + w.width + 70 && y > w.y - 20 && y < w.y + w.height + 90)) continue; if ((scene == FARM ? FARM_BUILDINGS : VILLAGE_BUILDINGS).Any(b => x > b.x * 32 - 60 && x < (b.x + b.w) * 32 + 60 && y > b.y * 32 - 60 && y < (b.y + b.h) * 32 + 100)) continue; trees.Add([(x - 16) / 32, (y - 20) / 32]); } return trees.Where(t => !(scene == FARM ? FARM_BUILDINGS : VILLAGE_BUILDINGS).Any(b => t[0] >= b.x && t[0] < b.x + b.w && t[1] >= b.y && t[1] < b.y + b.h)).ToArray(); }
-    public static int[][] scene_trees(Scene scene) => scene == FARM ? FarmForest : scene == VILLAGE ? VillageForest : [];
-    public static bool blocked(Scene scene, float x, float y)
-    {
-        Point size = world_size(scene); if (!float.IsFinite(x) || !float.IsFinite(y) || x < 16 || x > size.x - 16 || y < 32 || y > size.y - 24) return true;
-        if (scene is HOME or SHOP) { if (x < 40 || x > size.x - 40 || y < 80 || y > size.y - 32) return true; return interior_solids(scene).Any(r => x >= r.x && x < r.x + r.width && y >= r.y && y < r.y + r.height); }
-        int tx = (int)(x / 32), ty = (int)(y / 32); foreach (var b in scene == FARM ? FARM_BUILDINGS : VILLAGE_BUILDINGS) if (tx >= b.x && tx < b.x + b.w && ty >= b.y + 2 && ty < b.y + b.h) return true;
-        if (water_bodies(scene).Any(r => x >= r.x && x < r.x + r.width && y >= r.y && y < r.y + r.height)) return true;
-        if (scene == VILLAGE && tx >= 15 && tx <= 18 && ty >= 14 && ty <= 15) return true;
-        return scene_trees(scene).Any(t => Math.Abs(x - (t[0] * 32 + 16)) < 14 && Math.Abs(y - (t[1] * 32 + 20)) < 13);
-    }
-    public static int find_path(Scene scene, Point start, Point goal, Point[] output)
-    {
-        if (blocked(scene, start.x, start.y) || blocked(scene, goal.x, goal.y)) return 0;
-        Point size = world_size(scene); int cols = (int)size.x / 32, rows = (int)size.y / 32;
-        int sx = (int)(start.x / 32), sy = (int)(start.y / 32), gx = (int)(goal.x / 32), gy = (int)(goal.y / 32);
-        if (!In(sx, 0, cols - 1) || !In(gx, 0, cols - 1) || !In(sy, 0, rows - 1) || !In(gy, 0, rows - 1)) return 0;
-        int[] parent = Enumerable.Repeat(-1, cols * rows).ToArray(); Queue<int> queue = new(); int first = sy * cols + sx, last = gy * cols + gx; parent[first] = first; queue.Enqueue(first);
-        while (queue.TryDequeue(out int node)) { if (node == last) break; int x = node % cols, y = node / cols; foreach (var (dx, dy) in new[] { (1, 0), (-1, 0), (0, 1), (0, -1) }) { int nx = x + dx, ny = y + dy; if (!In(nx, 0, cols - 1) || !In(ny, 0, rows - 1)) continue; int next = ny * cols + nx; if (parent[next] >= 0 || blocked(scene, nx * 32 + 16, ny * 32 + 16)) continue; parent[next] = node; queue.Enqueue(next); } }
-        if (parent[last] < 0) return 0; int count = 0; for (int n = last; n != first; n = parent[n]) { if (count >= output.Length) return 0; output[count++] = new(n % cols * 32 + 16, n / cols * 32 + 16); }
-        Array.Reverse(output, 0, count); return count;
-    }
+    public static Point world_size(Scene scene) => Map.Size(scene);
+    public static Rectangle[] water_bodies(Scene scene) => scene is FARM or VILLAGE ? [new((scene == FARM ? 26 : 25) * 32, 512, (scene == FARM ? 6 : 7) * 32, 128), new(1408, 1088, 384, 192)] : [];
+    public static Rectangle[] interior_solids(Scene scene) => Map.Props(scene).Where(p => p.solid).Select(p => p.bounds).ToArray();
+    public static int[][] scene_trees(Scene scene) => Map.Trees(scene);
+    public static bool blocked(Scene scene, float x, float y) => Physics.Blocked(scene, x, y);
+    public static int find_path(Scene scene, Point start, Point goal, Point[] output) => Physics.FindPath(scene, start, goal, output);
 }

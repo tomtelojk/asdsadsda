@@ -2,7 +2,7 @@ name: Publicar CSharp Linux
 on:
   workflow_dispatch:
   push:
-    tags: ['v5*']
+    tags: ['v6*']
 permissions:
   contents: write
 jobs:
@@ -24,6 +24,9 @@ jobs:
           xvfb-run -a "$binary" --smoke --village --save-dir "$RUNNER_TEMP/vale-village"
           xvfb-run -a "$binary" --smoke --home --save-dir "$RUNNER_TEMP/vale-home"
           xvfb-run -a "$binary" --smoke --shop --save-dir "$RUNNER_TEMP/vale-shop"
+          for room in WORKSHOP BAKERY LIBRARY GREENHOUSE COTTAGE; do
+            xvfb-run -a "$binary" --smoke --scene "$room" --save-dir "$RUNNER_TEMP/vale-$room"
+          done
       - name: Publicar downloads
         env:
           GH_TOKEN: ${{ github.token }}
@@ -32,6 +35,6 @@ jobs:
           tag="v$version"
           binary="release/Vale-do-Sol-CSharp-$version-Linux-x86_64"
           if ! gh release view "$tag" >/dev/null 2>&1; then
-            gh release create "$tag" --draft --target "$GITHUB_SHA" --title "Vale do Sol $version · Rostos do vale" --notes-file docs/RELEASE.md
+            gh release create "$tag" --draft --target "$GITHUB_SHA" --title "Vale do Sol $version · Caminhos do vale" --notes-file docs/RELEASE.md
           fi
           gh release upload "$tag" "$binary" "$binary.tar.gz" release/SHA256SUMS-CSharp --clobber

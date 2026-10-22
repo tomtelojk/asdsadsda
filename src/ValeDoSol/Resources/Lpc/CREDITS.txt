@@ -1,0 +1,10 @@
+Liberated Pixel Cup original tilesets (unmodified PNGs)
+Artist: Lanea Zimmerman (Sharm), https://opengameart.org/user/1727
+Original tileset repository also credits Daniel Armstrong (HughSpectrum).
+Source: https://github.com/OpenGameArt/LiberatedPixelCup
+Commit: f61104a1ecc54e7bce54b82ada7d7ba4c41bc524
+Selected license: Creative Commons Attribution-ShareAlike 3.0 Unported.
+License text: CC-BY-SA-3.0.txt; https://creativecommons.org/licenses/by-sa/3.0/
+PNG files are unchanged; source rectangles and map composition are defined by
+Vale do Sol. These assets retain their own license, separate from MIT code.
+Full source paths are listed in SOURCE.json alongside the PNGs.
