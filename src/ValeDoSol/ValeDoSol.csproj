@@ -1,0 +1,20 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <TargetFramework>net10.0</TargetFramework>
+    <AssemblyName>ValeDoSol</AssemblyName>
+    <RootNamespace>ValeDoSol</RootNamespace>
+    <Nullable>enable</Nullable>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Version>3.0.0</Version>
+    <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
+    <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
+  </PropertyGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="../../LICENSE" LogicalName="ValeDoSol.License.txt" />
+    <EmbeddedResource Include="Resources/FONT-LICENSE.txt" LogicalName="ValeDoSol.FontLicense.txt" />
+    <EmbeddedResource Include="../../vendor/raylib-6.2_linux_amd64/LICENSE" LogicalName="ValeDoSol.RaylibLicense.txt" />
+    <EmbeddedResource Include="Resources/DejaVuSans.ttf" LogicalName="ValeDoSol.UiFont.ttf" />
+    <Content Include="../../vendor/raylib-6.2_linux_amd64/lib/libraylib.so.6.2.0" Link="libraylib.so" CopyToOutputDirectory="PreserveNewest" CopyToPublishDirectory="PreserveNewest" />
+  </ItemGroup>
+</Project>

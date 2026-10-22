@@ -1,4 +1,4 @@
-name: Verificar jogo
+name: Verificar CSharp
 on:
   push:
     branches: [main]
@@ -10,16 +10,13 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-dotnet@v5
         with:
-          node-version: 24
-          cache: npm
-      - run: npm ci
-      - run: npm test
-      - run: npm run build
-      - run: npx playwright-core install --with-deps chromium
-      - name: Exercitar o jogo no navegador
+          dotnet-version: 10.0.x
+      - run: ./scripts/test.sh
+      - name: Preparar display de teste
+        run: sudo apt-get update && sudo apt-get install -y xvfb libgl1-mesa-dri
+      - name: Abrir fazenda e vila nativas
         run: |
-          npm run dev > /tmp/vale-vite.log 2>&1 &
-          node -e "let n=0;const check=()=>fetch('http://localhost:5173').then(r=>{if(!r.ok)throw Error(r.status)}).catch(e=>{if(++n>30)process.exit(1);setTimeout(check,500)});check()"
-          npm run test:browser
+          xvfb-run -a ./scripts/dotnet.sh src/ValeDoSol/bin/Release/net10.0/ValeDoSol.dll --smoke --save-dir "$RUNNER_TEMP/vale-farm"
+          xvfb-run -a ./scripts/dotnet.sh src/ValeDoSol/bin/Release/net10.0/ValeDoSol.dll --smoke --village --save-dir "$RUNNER_TEMP/vale-village"

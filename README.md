@@ -1,100 +1,113 @@
-# Vale do Sol 🌻
+# Vale do Sol — C# 🌱
 
-Um jogo de fazenda original em português, com aplicativo de desktop para **Linux x86_64** e versão de navegador. Explore a Fazenda Girassol e a Vila das Flores, cultive três tipos de vegetais e conheça seus novos vizinhos.
+Jogo de fazenda para **Linux x86_64**, escrito em **C# com .NET 10**. A janela, a entrada de teclado/mouse e os gráficos usam raylib. A lógica do jogo, interface, navegação, NPCs e saves ficam em C#.
 
-## Baixar e jogar no Linux
+O projeto principal foi convertido: não usa HTML, JavaScript, navegador ou Electron. A edição anterior continua preservada na [versão 2.0](https://github.com/tomtelojk/asdsadsda/releases/tag/v2.0.0).
 
-Os arquivos ficam em **[Releases](https://github.com/tomtelojk/asdsadsda/releases/latest)**.
+## Baixar e executar
 
-### AppImage
+Abra **[Releases](https://github.com/tomtelojk/asdsadsda/releases/latest)** e baixe `Vale-do-Sol-CSharp-3.0.0-Linux-x86_64` ou o `.tar.gz` equivalente.
 
-Baixe `Vale-do-Sol-Linux-2.0.0.AppImage`, abra suas propriedades e marque **Permitir executar como programa**. Depois abra o arquivo. Pelo terminal:
+Nas propriedades do executável, marque **Permitir executar como programa** e abra. Pelo terminal:
 
 ```sh
-chmod +x Vale-do-Sol-Linux-2.0.0.AppImage
-./Vale-do-Sol-Linux-2.0.0.AppImage
+chmod +x Vale-do-Sol-CSharp-3.0.0-Linux-x86_64
+./Vale-do-Sol-CSharp-3.0.0-Linux-x86_64
 ```
 
-### Alternativa sem FUSE
+O arquivo individual já inclui o runtime .NET e a biblioteca gráfica. Não precisa instalar o SDK, Electron ou FUSE. Na primeira execução, o .NET extrai bibliotecas em `~/.net/`.
 
-Extraia `Vale-do-Sol-Linux-2.0.0.tar.gz` e abra o executável `vale-do-sol` dentro da pasta extraída. Mantenha todos os arquivos dessa pasta juntos. Não é necessário instalar Node.js, Electron ou abrir um navegador.
+Requer **Linux x86_64 com glibc 2.38+**, sessão gráfica X11/XWayland e OpenGL 3.3 — por exemplo Ubuntu 24.04. Os pacotes são sem assinatura e não têm atualizador automático.
 
-Os pacotes dependem das bibliotecas de desktop da sua distribuição e do suporte a sandbox do Chromium. AppImage também requer FUSE 2; use o tar.gz se FUSE não estiver disponível. Não execute como root. Os pacotes desta versão não são assinados e não incluem atualizações automáticas.
+![Fazenda desenhada pelo aplicativo C#](docs/fazenda-csharp.png)
 
-## O que há para fazer
+## O jogo
 
-- Cultivar cenouras, nabos e morangos, com energia, rega diária, colheita e venda.
-- Caminhar por dois mapas, com colisões e busca de caminho ao clicar.
-- Conversar com Lia, Bento, Iara e Theo. Os moradores mudam de lugar à tarde.
-- Construir amizades, dar um vegetal de presente por dia e completar três missões.
-- Comprar sementes com Lia, melhorar o regador com Bento e entregar cenouras a Theo.
-- Ganhar uma vara de Iara e pescar reagindo à fisgada.
-- Recolher madeira e pedras, descansar e aproveitar a chuva a cada quatro dias.
-- Exportar/importar saves, ativar efeitos sonoros e jogar em tela cheia.
+- Fazenda com 48 canteiros e três culturas: cenoura, nabo e morango.
+- Enxada, plantio, rega, colheita, inventário e venda.
+- Vila com Lia, Bento, Iara e Theo: diálogos, amizade e presentes.
+- Loja de sementes, melhoria do regador e três missões.
+- Pesca com tempo de reação, madeira e pedra para recolher.
+- Dia/noite, chuva a cada quatro dias e calendário sazonal.
+- Colisões e caminhada por clique com busca de caminho.
+- Saves locais, backup/restauração e tela cheia.
 
-É um jogo pequeno em evolução. Não há multiplayer, interiores de casas ou sistema de casamento. As quatro estações mudam no calendário a cada 28 dias; as culturas atuais podem ser plantadas em qualquer estação.
+É uma primeira edição nativa jogável. Ainda não há interiores, casamento, multiplayer ou música. As estações mudam no calendário a cada 28 dias, mas as três culturas atuais podem ser plantadas o ano todo.
 
 ## Controles
 
 | Ação | Controle |
 | --- | --- |
-| Andar | WASD ou setas; clique no chão |
-| Enxada, sementes, regador, cesta, explorar | 1, 2, 3, 4, 5 |
-| Usar ferramenta | Clique no canteiro; o personagem caminha até ele |
-| Conversar, recolher, entrar na loja | E perto do alvo ou clique nele |
-| Pescar | F perto do lago, depois Espaço quando aparecer AGORA |
-| Trocar sementes | Aba Mochila → Plantar |
-| Descansar | Botão Descansar ou E na porta de casa |
-| Fechar/cancelar | Escape |
-| Ajuda | H |
-| Tela cheia no desktop | F11 |
+| Andar | WASD, setas ou clique no chão |
+| Enxada, sementes, regador, cesta, explorar | 1–5 |
+| Cultivar | Clique no canteiro; o personagem caminha até ele |
+| Trocar a cultura | Mochila → Plantar |
+| Conversar, recolher recursos e abrir portas/loja | E perto do alvo ou clique nele |
+| Pescar | F perto do lago, Espaço na indicação AGORA |
+| Trocar aba lateral | Tab |
+| Salvar | F5 |
+| Ajuda / fechar | H / Escape |
+| Tela cheia | F11 |
 
-O relógio para durante diálogos, lojas e ajuda. Às 22h o personagem volta para casa e começa um novo dia.
+Regue e descanse para as plantas crescerem. Colha com a cesta e venda para Lia. Fale com Iara para ganhar uma vara. Junte 8 madeiras e 60 G para Bento melhorar seu regador. Às 22h começa um novo dia. Diálogos e perda de foco pausam o relógio.
 
-## Saves
+## Executar o código e ver as mudanças
 
-O desktop salva localmente no perfil do aplicativo (`~/.config/vale-do-sol/` em instalações Linux convencionais), separado dos saves do navegador. Use **Exportar save** para fazer backup e **Importar** para transferir o progresso entre desktop e navegador. Saves da versão 1 são migrados automaticamente quando encontrados no mesmo armazenamento. A importação de arquivos aceita apenas saves validados da versão 2. Não mova ou remova o perfil para atualizar o jogo.
+Requer SDK **.NET 10**, `curl`, `tar` e as bibliotecas gráficas do Linux. Em Ubuntu 24.04, as bibliotecas são `libgl1`, `libx11-6`, `libxrandr2`, `libxi6`, `libxcursor1` e `libxinerama1`.
 
-## Versão offline de navegador
-
-Baixe `vale-do-sol.zip`, extraia e abra `vale-do-sol.html`. Não precisa de servidor ou conexão. Alguns navegadores restringem saves em arquivos locais; nesse caso, use Exportar save. O GitHub Pages precisa ser habilitado pelo administrador do repositório para existir um endereço jogável online.
-
-## Desenvolvimento
-
-Requer Node.js 22.16+ ou 24 e npm. Electron 45 inclui seu próprio runtime para a versão distribuída.
+Se você ainda não tem o SDK, o instalador opcional usa uma pasta local do projeto, sem sudo:
 
 ```sh
-npm ci
-npm run dev
+./scripts/setup-dotnet.sh
 ```
+
+Para compilar e jogar:
 
 ```sh
-npm test
-npm run build
-npm run desktop
-npm run package:linux
+./scripts/run.sh
 ```
 
-O build gera `dist/` e atualiza o HTML offline. Os pacotes de desktop ficam em `release/`. O Electron permanece com sandbox, isolamento de contexto e integração de Node desativada na janela do jogo. Não há acesso remoto ou login.
-
-Para testes de navegador:
+Edite os arquivos `.cs`, feche o jogo e execute o mesmo comando para testar suas mudanças. O primeiro build baixa raylib do repositório oficial e confere o SHA-256. O SDK local também tem seu SHA-512 conferido.
 
 ```sh
-npx playwright-core install chromium
-npm run dev
-# em outro terminal:
-npm run test:browser
+./scripts/test.sh       # build e testes das regras do jogo
+./scripts/build.sh      # compila com avisos tratados como erros
+./scripts/package.sh    # produz o executável Linux com runtime incluído
 ```
 
-Use `CHROMIUM_PATH=/caminho/para/chromium` se preferir um navegador instalado. O workflow **Verificar jogo** roda os testes e o build. O workflow manual **Publicar desktop Linux** recria os downloads da versão indicada no package.json.
+Os executáveis de distribuição ficam em `release/`. Dependências e SDK locais ficam em `vendor/` e `.tools/`, fora do Git. `ValeDoSol.slnx` pode ser aberto em uma IDE com suporte a C#/.NET 10.
 
-## Estrutura
+## Organização
 
-- `game/state.js`: estado, economia, cultivo, missões, amizade e validação de saves.
-- `game/world.js`: mapas, obstáculos e busca de caminho A*.
-- `game/render.js`: arte pixelada original e animação em Canvas.
-- `src.js`: controles, interface, diálogos e ciclo do jogo.
-- `desktop/main.cjs`: aplicativo Electron e menus nativos.
-- `tests/`: regras de jogo e fluxos reais no navegador.
+- `src/ValeDoSol/State.cs`: cultivo, inventário, amizade, missões, navegação e persistência.
+- `src/ValeDoSol/Game.cs`: ciclo do jogo e controles.
+- `src/ValeDoSol/World.cs`: desenho dos mapas e personagens.
+- `src/ValeDoSol/Ui.cs`: menus, loja, diálogos e ferramentas.
+- `src/ValeDoSol/Ray.cs`: interop explícito com as funções gráficas de raylib.
+- `src/ValeDoSol/SelfTests.cs`: testes executáveis sem interface gráfica.
+- `.github/workflows/`: verificação e geração dos pacotes Linux.
 
-Arte e personagens originais. Código sob licença MIT.
+## Saves e backup
+
+Pasta padrão: `~/.local/share/vale-do-sol-csharp/`. Se `XDG_DATA_HOME` estiver definido, usa `$XDG_DATA_HOME/vale-do-sol-csharp/`.
+
+O arquivo principal é `save.json`. **Criar backup** grava `backup.json` na mesma pasta; **Restaurar** carrega esse backup. Para transferir entre computadores, copie o backup para a mesma pasta no destino. Um save principal inválido é preservado e não é sobrescrito automaticamente.
+
+```sh
+./ValeDoSol --save-dir /caminho/para/uma/nova/partida
+```
+
+Os saves da antiga edição de navegador/Electron não são importados automaticamente e permanecem intactos em seu armazenamento original.
+
+## Validação
+
+`--self-test` executa verificações de cultivo, clima, economia, amizade, missões, navegação e serialização. `--smoke` abre a janela, desenha 60 quadros, salva e encerra. `--village` pode ser combinado com o smoke test. Esses parâmetros também funcionam no executável distribuído.
+
+```sh
+./ValeDoSol --self-test
+./ValeDoSol --smoke --save-dir /tmp/vale-teste
+```
+
+Os testes gráficos automatizados usam Xvfb; isso não substitui validação em todas as distribuições/GPU Linux.
+
+Código e arte originais sob MIT. raylib: zlib/libpng. A fonte DejaVu Sans e sua licença são incluídas em `Resources/`. O executável também disponibiliza os avisos com `--licenses`.

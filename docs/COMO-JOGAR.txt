@@ -1,0 +1,49 @@
+VALE DO SOL 3.0 - C# / .NET / RAYLIB
+
+Linux x86_64 com sessão gráfica, OpenGL 3.3 e glibc 2.38 ou superior
+(exemplo: Ubuntu 24.04). O runtime .NET já está incluído.
+
+COMO ABRIR
+1. Extraia este pacote e abra ValeDoSol.
+2. Se necessário, nas propriedades marque Permitir executar como programa.
+3. Pelo terminal: chmod +x ValeDoSol && ./ValeDoSol
+
+O arquivo executável individual também funciona sozinho. Não precisa
+instalar .NET, Node, Electron ou abrir um navegador. Não requer FUSE.
+A primeira execução extrai as bibliotecas nativas em ~/.net/.
+
+CONTROLES
+WASD / setas: caminhar. Clique no chão: caminhar até lá.
+1: enxada; 2: sementes; 3: regador; 4: cesta; 5: explorar.
+Clique no canteiro: caminhar até ele e usar a ferramenta.
+E: conversar, recolher recursos e abrir portas/loja.
+F: pescar perto do lago; Espaço: puxar quando aparecer AGORA.
+Tab: trocar Diário, Mochila e Vila.
+F5: salvar agora. F11: tela cheia. H: ajuda. Escape: fechar/ajuda.
+
+PLANTE, REGUE E DESCANSE
+As plantas crescem depois de um dia regado. Colha com a cesta e venda
+para Lia. Selecione outras sementes na aba Mochila. Compre mais na vila.
+A cada quatro dias chove. Às 22h começa automaticamente um novo dia.
+Diálogos e perda de foco pausam o relógio.
+
+VILA
+Lia vende sementes e compra colheitas/peixes.
+Bento melhora o regador por 60 moedas e 8 madeiras.
+Iara entrega uma vara de pesca ao conversar com você.
+Theo aceita 3 cenouras em troca de 75 moedas.
+Você pode dar um vegetal por dia a cada morador para ganhar amizade.
+Recolha troncos e pedras com E. Os recursos retornam no dia seguinte.
+
+SAVES
+Local padrão: ~/.local/share/vale-do-sol-csharp/save.json
+Ou $XDG_DATA_HOME/vale-do-sol-csharp/save.json quando configurado.
+Criar backup gera backup.json nessa mesma pasta. Restaurar carrega esse
+arquivo. Para transferir entre computadores, copie backup.json para a
+pasta de saves no destino e use Restaurar.
+
+Saves da antiga versão HTML/Electron não são importados nesta edição.
+Eles permanecem intactos. O aplicativo não inclui atualização automática.
+
+Projeto e novas versões:
+https://github.com/tomtelojk/asdsadsda

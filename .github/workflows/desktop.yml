@@ -1,8 +1,8 @@
-name: Publicar desktop Linux
+name: Publicar CSharp Linux
 on:
   workflow_dispatch:
   push:
-    tags: ['v*']
+    tags: ['v3*']
 permissions:
   contents: write
 jobs:
@@ -10,27 +10,21 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v5
-      - uses: actions/setup-node@v5
+      - uses: actions/setup-dotnet@v5
         with:
-          node-version: 24
-          cache: npm
-      - run: npm ci
-      - run: npm test
-      - run: npm run package:linux
+          dotnet-version: 10.0.x
+      - run: ./scripts/package.sh
+      - name: Testar o executável distribuído
+        run: |
+          sudo apt-get update && sudo apt-get install -y xvfb libgl1-mesa-dri
+          ./release/Vale-do-Sol-CSharp-3.0.0-Linux-x86_64 --self-test
+          xvfb-run -a ./release/Vale-do-Sol-CSharp-3.0.0-Linux-x86_64 --smoke --save-dir "$RUNNER_TEMP/vale-published"
       - name: Publicar downloads
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          version=$(node -p "require('./package.json').version")
-          tag="v$version"
+          tag=v3.0.0
           if ! gh release view "$tag" >/dev/null 2>&1; then
-            gh release create "$tag" --target "$GITHUB_SHA" --title "Vale do Sol $version · Linux" --notes "Aplicativo Linux x86_64. Torne o AppImage executável e abra. Alternativa sem FUSE: extraia o tar.gz e execute vale-do-sol."
+            gh release create "$tag" --draft --target "$GITHUB_SHA" --title "Vale do Sol 3.0 · C# para Linux" --notes-file docs/RELEASE.md
           fi
-          python3 - <<'PYTHON'
-          import hashlib, pathlib, zipfile
-          with zipfile.ZipFile('vale-do-sol.zip', 'w', compression=zipfile.ZIP_DEFLATED) as z:
-              z.write('vale-do-sol.html')
-          files = list(pathlib.Path('release').glob('*.AppImage')) + list(pathlib.Path('release').glob('*.tar.gz')) + [pathlib.Path('vale-do-sol.zip')]
-          pathlib.Path('release/SHA256SUMS').write_text(''.join(f'{hashlib.file_digest(p.open("rb"), "sha256").hexdigest()}  {p.name}\n' for p in files))
-          PYTHON
-          gh release upload "$tag" release/*.AppImage release/*.tar.gz vale-do-sol.zip release/SHA256SUMS --clobber
+          gh release upload "$tag" release/Vale-do-Sol-CSharp-3.0.0-Linux-x86_64 release/*.tar.gz release/SHA256SUMS-CSharp --clobber
