@@ -1,4 +1,4 @@
-VALE DO SOL 4.0 - UMA VIDA NO CAMPO
+VALE DO SOL 5.0 - ROSTOS DO VALE
 C# / .NET / raylib - Linux x86_64
 
 ABRIR
@@ -38,6 +38,12 @@ Iara entrega uma vara de pesca. F junto ao lago: lançar a linha.
 Espaço quando aparecer AGORA: puxar o peixe.
 Theo aceita 3 cenouras em troca de 75 moedas.
 Dê um vegetal de presente por dia para desenvolver as amizades.
+Dora é padeira, Miguel cuida da horta de ervas, Ceci é musicista e Otávio
+coleciona histórias. Oito moradores têm amizades e rotinas próprias.
+Chuva e fins de semana mudam os passeios. Veja as atividades atuais com R.
+Lia atende das 8h às 17h; nos fins de semana, até 13h.
+Q, T e Y durante uma conversa: trabalho, histórias pessoais e como vai o dia.
+Também pode escolher os assuntos com o mouse.
 E em um diálogo revela o restante do texto e depois encerra a conversa.
 
 MENUS
@@ -51,8 +57,8 @@ SAVES
 Pasta padrão: ~/.local/share/vale-do-sol-csharp/
 Ou $XDG_DATA_HOME/vale-do-sol-csharp/ quando configurado.
 Save principal: save.json. O menu Mochila oferece Criar backup/Restaurar.
-Saves C# da edição 3 continuam funcionando. Na primeira atualização, uma
-cópia do save antigo é guardada em save-before-v4.json.
+Saves C# das edições 3 e 4 continuam funcionando. Na primeira atualização, uma
+cópia do save antigo é guardada em save-before-v5.json.
 Para outra partida: ./ValeDoSol --save-dir /caminho/para/a/partida
 
 Projeto: https://github.com/tomtelojk/asdsadsda

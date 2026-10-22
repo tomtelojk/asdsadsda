@@ -11,10 +11,12 @@ public class Game
     public int tool, tab, hover = -1, npc = -1, facing;
     public Dialog dialog;
     public Point mouse, camera, action_target;
-    public Point[] path = new Point[MAX_PATH], npc_position = new Point[4];
-    public Point[][] npc_paths = Enumerable.Range(0, 4).Select(_ => new Point[MAX_PATH]).ToArray();
+    public Point[] path = new Point[MAX_PATH], npc_position = new Point[Social.Count];
+    public Point[][] npc_paths = Enumerable.Range(0, Social.Count).Select(_ => new Point[MAX_PATH]).ToArray();
     public int path_length, path_at;
-    public int[] npc_phase = new int[4], npc_length = new int[4], npc_at = new int[4];
+    public int[] npc_phase = new int[Social.Count], npc_length = new int[Social.Count], npc_at = new int[Social.Count];
+    public Scene[] npc_scene = new Scene[Social.Count];
+    public int[] npc_facing = new int[Social.Count], npc_wander = new int[Social.Count];
     public PendingAction pending;
     public float elapsed, clock_tick, save_tick, toast_timer, dialog_age, location_timer = 4, fade_timer, action_timer;
     public bool moving, save_ok, quit, ignore_focus;
@@ -34,28 +36,36 @@ public static class GameLogic
     public static void game_scene(Game g, Scene scene, Point at) { g.s.scene = scene; g.s.player = at; g.path_length = 0; g.pending = new(); g.fishing = 0; g.dialog = D_NONE; g.camera = camera_target(g.s); g.location_timer = 4; g.fade_timer = .3f; game_save(g); }
 
     static float distance(Point a, Point b) => MathF.Sqrt((a.x - b.x) * (a.x - b.x) + (a.y - b.y) * (a.y - b.y));
-    static void reset_npcs(Game g) { for (int i = 0; i < 4; i++) { int phase = g.s.minute >= 780 ? 1 : 0; g.npc_phase[i] = phase; g.npc_position[i] = phase == 1 ? NPCS[i].afternoon : NPCS[i].morning; g.npc_length[i] = g.npc_at[i] = 0; } }
+    public static void reset_npcs(Game g)
+    {
+        for (int i = 0; i < Social.Count; i++) { Appointment a = Social.Now(i, g.s); g.npc_phase[i] = Social.Phase(i, g.s); g.npc_scene[i] = a.scene; g.npc_position[i] = a.scene == SHOP ? a.at : Social.Walkable(a.at); g.npc_length[i] = g.npc_at[i] = 0; g.npc_facing[i] = 0; g.npc_wander[i] = (g.s.minute + i * 5) / 20; }
+    }
+    public static void safe_position(Game g)
+    {
+        if (!blocked(g.s.scene, g.s.player.x, g.s.player.y)) return;
+        for (int r = 1; r < 24; r++) for (int y = -r; y <= r; y++) for (int x = -r; x <= r; x++) { if (Math.Abs(x) + Math.Abs(y) != r) continue; Point at = new((int)(g.s.player.x / 32) * 32 + 16 + x * 32, (int)(g.s.player.y / 32) * 32 + 16 + y * 32); if (!blocked(g.s.scene, at.x, at.y)) { g.s.player = at; return; } }
+    }
     public static void game_toast(Game g, string message) { g.toast = message; g.toast_timer = 7; }
     public static void game_save(Game g) { g.save_ok = state_save(g.s, g.save_path); }
     public static void game_init(Game g, string dir)
     {
         g.save_dir = dir; g.save_path = Path.Combine(dir, "save.json"); bool exists = false, loaded = false;
-        try { Directory.CreateDirectory(dir); exists = File.Exists(g.save_path); if (state_load(out var state, g.save_path)) { g.s = state; loaded = true; using var document = System.Text.Json.JsonDocument.Parse(File.ReadAllText(g.save_path)); string backup = Path.Combine(dir, "save-before-v4.json"); if (!document.RootElement.TryGetProperty("edition", out _) && !File.Exists(backup)) File.Copy(g.save_path, backup); } } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { g.save_path = ""; }
-        reset_npcs(g); g.camera = camera_target(g.s);
+        try { Directory.CreateDirectory(dir); exists = File.Exists(g.save_path); if (state_load(out var state, g.save_path)) { g.s = state; loaded = true; using var document = System.Text.Json.JsonDocument.Parse(File.ReadAllText(g.save_path)); string backup = Path.Combine(dir, "save-before-v5.json"); if ((!document.RootElement.TryGetProperty("edition", out var oldEdition) || oldEdition.GetInt32() < 5) && !File.Exists(backup)) File.Copy(g.save_path, backup); } } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { g.save_path = ""; }
+        safe_position(g); reset_npcs(g); g.camera = camera_target(g.s);
         if (exists && !loaded) { g.save_path = ""; g.save_ok = false; game_toast(g, "Save inválido preservado. Inicie com outro diretório de save para criar uma nova partida."); }
         else { game_save(g); game_toast(g, loaded ? "Bem-vindo de volta! O vale sentiu sua falta." : "Um novo começo. Aperte H para aprender a jogar."); }
     }
     public static void game_modal(Game g, Dialog d) { g.dialog = d; g.dialog_age = 0; g.path_length = 0; g.pending = new(); g.fishing = 0; }
     public static void game_travel(Game g) { if (g.s.scene == HOME) { game_scene(g, FARM, new(176, 272)); return; } if (g.s.scene == SHOP) { game_scene(g, VILLAGE, new(240, 288)); return; } game_scene(g, g.s.scene == FARM ? VILLAGE : FARM, g.s.scene == FARM ? new(80, 384) : new(WORLD_W - 80, 384)); }
     public static void game_rest(Game g) { int grown = next_day(g.s); game_scene(g, HOME, new(320, 280)); g.clock_tick = 0; reset_npcs(g); game_toast(g, $"Bom dia! {grown} plantas cresceram. " + (raining(g.s) ? "A chuva está regando a horta." : "Um novo dia começa.")); }
-    public static void game_converse(Game g, int npc) { if (npc < 0 || npc > 3) return; bool first = (g.s.met & (1u << npc)) == 0; talk_to(g.s, npc); g.npc = npc; g.reply = first ? NPCS[npc].first : NPCS[npc].later[g.s.day % 2]; game_modal(g, D_NPC); game_save(g); }
+    public static void game_converse(Game g, int npc) { if (npc < 0 || npc >= Social.Count) return; bool first = (g.s.met & (1u << npc)) == 0; talk_to(g.s, npc); g.npc = npc; g.reply = Social.Greeting(g.s, npc, first); Point delta = new(g.s.player.x - g.npc_position[npc].x, g.s.player.y - g.npc_position[npc].y); g.npc_facing[npc] = Math.Abs(delta.x) > Math.Abs(delta.y) ? (delta.x < 0 ? 1 : 2) : delta.y < 0 ? 3 : 0; game_modal(g, D_NPC); game_save(g); }
     static PendingAction closest(Game g)
     {
         PendingAction result = new(); float best = 76; Point p = g.s.player;
         void Consider(PendingAction a) { float d = distance(p, a.target); if (d < best) { best = d; result = a; } }
         if (g.s.scene == HOME) { Consider(new(7, 0, 0, new(416, 208))); Consider(new(8, 0, 0, new(320, 432))); return result; }
-        if (g.s.scene == SHOP) { Consider(new(1, 0, 0, new(352, 276))); Consider(new(9, 0, 0, new(352, 464))); return result; }
-        if (g.s.scene == VILLAGE) for (int i = 0; i < 4; i++) Consider(new(1, i, 0, g.npc_position[i]));
+        if (g.s.scene == SHOP) { if (g.npc_scene[0] == SHOP) Consider(new(1, 0, 0, new(352, 276))); Consider(new(9, 0, 0, new(352, 464))); return result; }
+        if (g.s.scene == VILLAGE) for (int i = 0; i < Social.Count; i++) if (g.npc_scene[i] == VILLAGE) Consider(new(1, i, 0, g.npc_position[i]));
         for (int i = 0; i < 6; i++) { var r = RESOURCES[i]; if (r.scene != g.s.scene || (g.s.gathered & (1u << i)) != 0) continue; Consider(new(2, i, 0, new(r.x * 32 + 16, r.y * 32 + 16))); }
         var buildings = g.s.scene == FARM ? FARM_BUILDINGS : VILLAGE_BUILDINGS;
         for (int i = 0; i < buildings.Length; i++) { var b = buildings[i]; if (b.type > 2) continue; Consider(new(b.type + 3, i, 0, new((b.x + b.w / 2f) * 32, (b.y + b.h) * 32 + 22))); }
@@ -68,14 +78,14 @@ public static class GameLogic
         if (a.type == 7) { game_modal(g, D_REST); return; }
         if (a.type is 8 or 9) { game_travel(g); return; }
         if (a.type == 4) { game_scene(g, SHOP, new(352, 400)); return; }
-        if (a.type == 5) { game_converse(g, 1); return; }
+        if (a.type == 5) { if (distance(g.s.player, g.npc_position[1]) < 90) game_converse(g, 1); else game_toast(g, "Bento saiu da oficina. Veja a atividade dele no menu de moradores [R]."); return; }
         if (a.type != 2 || (g.s.gathered & (1u << a.index)) != 0) return;
         if (g.s.energy < 5) { game_toast(g, "Você precisa descansar para recuperar energia."); return; }
         if (g.s.wood > 9999997 || g.s.stone > 9999998) return;
         g.s.energy -= 5; g.s.gathered |= 1u << a.index; if (RESOURCES[a.index].type == 0) { g.s.wood += 3; game_toast(g, "+3 madeiras! Leve para Bento melhorar seu regador."); } else { g.s.stone += 2; if (g.s.coins <= 999999997) g.s.coins += 3; game_toast(g, "+2 pedras e 3 moedas encontradas entre elas."); }
         game_save(g);
     }
-    public static void game_interact(Game g) { var a = closest(g); if (a.type != 0) perform(g, a); else game_toast(g, "Aproxime-se de um morador, de uma porta ou de um tronco."); }
+    public static void game_interact(Game g) { var a = closest(g); if (a.type != 0) perform(g, a); else game_toast(g, g.s.scene == SHOP ? "Lia está fora do balcão. O armazém atende das 8h às 17h; nos fins de semana, até 13h." : "Aproxime-se de um morador, de uma porta ou de um tronco."); }
     static bool near_pond(Game g) => water_bodies(g.s.scene).Any(w => distance(g.s.player, new(Math.Clamp(g.s.player.x, w.x, w.x + w.width), Math.Clamp(g.s.player.y, w.y, w.y + w.height))) < 67);
     public static string interaction_hint(Game g) { var a = closest(g); return a.type switch { 1 => "E  Conversar com " + NPCS[a.index].name, 2 => RESOURCES[a.index].type == 0 ? "E  Recolher madeira" : "E  Recolher pedra", 3 => "E  Entrar em casa", 4 => "E  Entrar no armazém", 5 => "E  Falar com Bento", 7 => "E  Dormir", 8 or 9 => "E  Sair", _ => g.s.rod && near_pond(g) ? "F  Pescar" : "" }; }
     public static void farm_near(Game g, int index) { if (index < 0) return; Point p = plot_position(index); p.x += 16; p.y += 16; if (distance(g.s.player, p) > 76) { game_toast(g, "Chegue mais perto do canteiro para usar a ferramenta."); return; } string message = farm_action(g.s, index, g.tool, out bool ok); if (ok) { g.action_timer = .32f; g.action_target = p; game_save(g); } game_toast(g, message); }
@@ -100,7 +110,7 @@ public static class GameLogic
     }
     static void world_click(Game g, Point p)
     {
-        if (g.s.scene == VILLAGE) for (int i = 0; i < 4; i++) { Point at = g.npc_position[i]; if (distance(new(at.x, at.y - 12), p) < 30) { if (distance(g.s.player, at) < 90) game_converse(g, i); else game_toast(g, "Aproxime-se para conversar."); return; } }
+        if (g.s.scene == VILLAGE) for (int i = 0; i < Social.Count; i++) { if (g.npc_scene[i] != VILLAGE) continue; Point at = g.npc_position[i]; if (distance(new(at.x, at.y - 12), p) < 30) { if (distance(g.s.player, at) < 90) game_converse(g, i); else game_toast(g, "Aproxime-se para conversar."); return; } }
         if (g.s.scene is HOME or SHOP) { game_interact(g); return; }
         for (int i = 0; i < 6; i++) { var r = RESOURCES[i]; Point at = new(r.x * 32 + 16, r.y * 32 + 16); if (r.scene == g.s.scene && (g.s.gathered & (1u << i)) == 0 && distance(at, p) < 22) { if (distance(g.s.player, at) < 76) perform(g, new(2, i, 0, at)); else game_toast(g, "Chegue mais perto para recolher."); return; } }
         int index = g.s.scene == FARM ? plot_at(p.x, p.y) : -1; if (index >= 0 && g.tool < 4) { farm_near(g, index); return; }
@@ -108,7 +118,32 @@ public static class GameLogic
         if (g.tool == 4) walk_to(g, p, new());
     }
     static void move_player(Game g, float dx, float dy) { if (!blocked(g.s.scene, g.s.player.x + dx, g.s.player.y)) g.s.player.x += dx; if (!blocked(g.s.scene, g.s.player.x, g.s.player.y + dy)) g.s.player.y += dy; }
-    static void update_npcs(Game g, float dt) { if (g.s.scene != VILLAGE) return; for (int i = 0; i < 4; i++) { int phase = g.s.minute >= 780 ? 1 : 0; if (phase != g.npc_phase[i]) { g.npc_phase[i] = phase; g.npc_length[i] = find_path(VILLAGE, g.npc_position[i], phase == 1 ? NPCS[i].afternoon : NPCS[i].morning, g.npc_paths[i]); g.npc_at[i] = 0; } if (g.npc_at[i] >= g.npc_length[i]) continue; Point goal = g.npc_paths[i][g.npc_at[i]], p = g.npc_position[i]; float d = distance(p, goal), step = 35 * dt; if (d <= step) { g.npc_position[i] = goal; g.npc_at[i]++; } else { g.npc_position[i].x += (goal.x - p.x) / d * step; g.npc_position[i].y += (goal.y - p.y) / d * step; } } }
+    public static void update_npcs(Game g, float dt)
+    {
+        for (int i = 0; i < Social.Count; i++)
+        {
+            Appointment activity = Social.Now(i, g.s); int phase = Social.Phase(i, g.s);
+            if (phase != g.npc_phase[i])
+            {
+                g.npc_phase[i] = phase; g.npc_wander[i] = (g.s.minute + i * 5) / 20;
+                if (g.npc_scene[i] == SHOP && activity.scene == VILLAGE) { g.npc_scene[i] = VILLAGE; g.npc_position[i] = new(240, 288); }
+                Point goal = activity.scene == SHOP ? new(240, 288) : Social.Walkable(activity.at);
+                if (g.npc_scene[i] == VILLAGE) { g.npc_length[i] = find_path(VILLAGE, g.npc_position[i], goal, g.npc_paths[i]); g.npc_at[i] = 0; }
+            }
+            if (g.npc_scene[i] != VILLAGE) continue;
+            int wander = (g.s.minute + i * 5) / 20;
+            if (g.npc_at[i] >= g.npc_length[i] && activity.scene == VILLAGE && wander != g.npc_wander[i] && !raining(g.s) && g.s.minute < 1140)
+            {
+                g.npc_wander[i] = wander; Point[] offsets = [new(-32, 0), new(32, 0), new(0, 32), new(0, -32)]; Point offset = offsets[(wander + i) % 4], destination = Social.Walkable(new(activity.at.x + offset.x, activity.at.y + offset.y));
+                g.npc_length[i] = find_path(VILLAGE, g.npc_position[i], destination, g.npc_paths[i]); g.npc_at[i] = 0;
+            }
+            if (g.npc_at[i] >= g.npc_length[i]) { g.npc_facing[i] = (g.s.minute / 9 + i) % 4; if (activity.scene == SHOP && distance(g.npc_position[i], new(240, 288)) < 40) { g.npc_scene[i] = SHOP; g.npc_position[i] = activity.at; } continue; }
+            Point goalAt = g.npc_paths[i][g.npc_at[i]], p = g.npc_position[i]; float d = distance(p, goalAt), step = (34 + i % 3 * 4) * dt;
+            g.npc_facing[i] = Math.Abs(goalAt.x - p.x) > Math.Abs(goalAt.y - p.y) ? (goalAt.x < p.x ? 1 : 2) : goalAt.y < p.y ? 3 : 0;
+            if (d <= step) { g.npc_position[i] = goalAt; g.npc_at[i]++; }
+            else { g.npc_position[i].x += (goalAt.x - p.x) / d * step; g.npc_position[i].y += (goalAt.y - p.y) / d * step; }
+        }
+    }
     public static void game_update(Game g, float dt, Point mouse)
     {
         g.mouse = mouse; g.elapsed += dt; g.toast_timer = Math.Max(0, g.toast_timer - dt); g.action_timer = Math.Max(0, g.action_timer - dt); g.location_timer = Math.Max(0, g.location_timer - dt); g.fade_timer = Math.Max(0, g.fade_timer - dt); g.moving = false;

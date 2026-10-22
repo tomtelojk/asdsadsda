@@ -1,18 +1,18 @@
 # Vale do Sol 🌱
 
-Jogo de fazenda para **Linux em C# e .NET 10**, com raylib para janela e gráficos. A edição 4 traz exploração em tela inteira, câmera que acompanha o personagem e interface de RPG sobre o cenário.
+Jogo de fazenda para **Linux em C# e .NET 10**, com raylib para janela e gráficos. A edição 5 renova os sprites e amplia a vila para oito moradores, com rotinas e conversas próprias. O protagonista é um fazendeiro masculino.
 
-![Fazenda e câmera da edição 4](docs/fazenda-csharp.png)
+![Fazenda e arte da edição 5](docs/fazenda-csharp.png)
 
 ## Baixar e jogar
 
 **[Downloads da versão atual](https://github.com/tomtelojk/asdsadsda/releases/latest)**
 
-Baixe `Vale-do-Sol-CSharp-4.0.0-Linux-x86_64`, marque **Permitir executar como programa** nas propriedades e abra. O `.tar.gz` contém o mesmo executável e as instruções.
+Baixe `Vale-do-Sol-CSharp-5.0.0-Linux-x86_64`, marque **Permitir executar como programa** nas propriedades e abra. O `.tar.gz` contém o mesmo executável e as instruções.
 
 ```sh
-chmod +x Vale-do-Sol-CSharp-4.0.0-Linux-x86_64
-./Vale-do-Sol-CSharp-4.0.0-Linux-x86_64
+chmod +x Vale-do-Sol-CSharp-5.0.0-Linux-x86_64
+./Vale-do-Sol-CSharp-5.0.0-Linux-x86_64
 ```
 
 O runtime .NET e a biblioteca gráfica estão incluídos. Não usa navegador, HTML ou Electron; não precisa de SDK ou FUSE para jogar. Requer Linux x86_64 com glibc 2.38+, sessão X11/XWayland e OpenGL 3.3, por exemplo Ubuntu 24.04. O .NET extrai bibliotecas em `~/.net/` na primeira execução.
@@ -25,13 +25,22 @@ O runtime .NET e a biblioteca gráfica estão incluídos. Não usa navegador, HT
 - Plante cenouras, nabos e morangos; regue, colha e venda.
 - Entre na sua casa, durma na cama e acorde para um novo dia.
 - Entre no armazém e converse com Lia no balcão para comprar e vender.
-- Conheça Lia, Bento, Iara e Theo; converse, dê presentes e complete missões.
+- Conheça Lia, Bento, Iara, Theo, Dora, Miguel, Ceci e Otávio; converse, dê presentes e complete missões.
+- Acompanhe trabalho, almoço e passeios dos moradores, com horários diferentes em dias de chuva e fins de semana.
+- Escolha assuntos sobre trabalho, histórias pessoais e o dia; crie amizade para conhecer novas falas.
+- Veja retratos e a atividade atual de cada morador no menu R.
 - Melhore o regador, pesque e recolha madeira e pedras.
 - Acompanhe dia/noite, chuva e o calendário sazonal.
 
+Árvores, cercas, culturas, pedras, troncos e personagens usam sprites originais com margens transparentes. O cenário ganhou flores, uma banca de pães, uma horta de ervas e casas detalhadas.
+
+![Novos moradores e retratos](docs/moradores-csharp.png)
+
+![Conversas com assuntos escolhidos](docs/dialogo-csharp.png)
+
 Mochila, diário e relações ficam em menus abertos por teclas. Os diálogos têm retratos e texto gradual. Arte e personagens originais, inspirados no gênero de RPGs de fazenda.
 
-É uma edição pequena em desenvolvimento. Ainda não há casamento, multiplayer ou música. As estações mudam no calendário; as culturas atuais podem crescer o ano todo. Os pacotes não incluem atualizador automático.
+É uma edição pequena em desenvolvimento. As casas decorativas da vila não têm interiores acessíveis; menções a músicas nos diálogos fazem parte da história dos personagens. Ainda não há casamento, multiplayer ou música. As estações mudam no calendário; as culturas atuais podem crescer o ano todo. Os pacotes não incluem atualizador automático.
 
 ## Controles
 
@@ -44,11 +53,12 @@ Mochila, diário e relações ficam em menus abertos por teclas. Os diálogos t�
 | Caminhar até um ponto | Botão direito; clique com Explorar selecionado |
 | Conversar, entrar, recolher ou usar a cama | E perto do alvo |
 | Pescar / puxar na fisgada | F / Espaço |
+| Assuntos de conversa: trabalho / pessoal / dia | Q / T / Y durante diálogos |
 | Mochila / diário / moradores | I ou Tab / J / R |
 | Ajuda / pausa | H / Escape |
 | Salvar / tela cheia | F5 / F11 |
 
-Siga a estrada à direita da fazenda até o limite do mapa para chegar à vila. Volte pela saída à esquerda da vila. Entre em portas com E; para sair de um interior, caminhe pela porta na parte de baixo. O tempo para durante menus/diálogos e perda de foco. Às 22h começa um novo dia na sua casa.
+Siga a estrada à direita da fazenda até o limite do mapa para chegar à vila. Volte pela saída à esquerda da vila. Entre em portas com E; para sair de um interior, caminhe pela porta na parte de baixo. Lia atende das 8h às 17h nos dias úteis, e até 13h nos fins de semana. Fora do expediente ela passeia pela vila. O tempo para durante menus/diálogos e perda de foco. Às 22h começa um novo dia na sua casa.
 
 ## Editar e testar em C#
 
@@ -73,7 +83,9 @@ Edite os arquivos `.cs`, feche o jogo e execute `./scripts/run.sh` para recompil
 
 - `State.cs`: estado, cultivo, economia, amizades, missões, colisões e busca de caminho.
 - `Game.cs`: controles, câmera, interações, cenas e passagem dos dias.
-- `World.cs`: mapas, interiores, personagens e animações.
+- `Art.cs`: atlas original em pixel art, quadros de animação, cenários e retratos.
+- `Social.cs`: compromissos diários, trajetos e textos dos personagens.
+- `World.cs`: mapas, interiores, profundidade e animações.
 - `Ui.cs`: HUD, ferramentas, menus e diálogos.
 - `Ray.cs`: interop explícito com a biblioteca gráfica raylib.
 - `SelfTests.cs`: verificações executáveis sem display.
@@ -84,7 +96,7 @@ Todos estão em `src/ValeDoSol/`. SDK, dependências e saídas de build ficam fo
 
 Pasta padrão: `~/.local/share/vale-do-sol-csharp/`, ou `$XDG_DATA_HOME/vale-do-sol-csharp/` se configurado. O save principal é `save.json`. A mochila oferece **Criar backup** e **Restaurar** usando `backup.json` nessa pasta.
 
-Os saves C# da edição 3 continuam carregando. Antes da primeira atualização, o save antigo é copiado para `save-before-v4.json`. Para transferir, copie `backup.json` para a pasta de saves no destino e use Restaurar. Os saves do antigo navegador/Electron continuam separados e não são importados.
+Os saves C# das edições 3 e 4 continuam carregando, com expansão das relações de quatro para oito moradores. Antes da primeira atualização, o save antigo é copiado para `save-before-v5.json`. Se uma construção nova ocupar a posição salva, o personagem é reposicionado no ponto livre mais próximo. Para transferir, copie `backup.json` para a pasta de saves no destino e use Restaurar. Os saves do antigo navegador/Electron continuam separados e não são importados.
 
 ```sh
 ./ValeDoSol --save-dir /caminho/para/uma/partida
@@ -92,6 +104,6 @@ Os saves C# da edição 3 continuam carregando. Antes da primeira atualização,
 
 ## Validação gráfica
 
-`--self-test` executa as regras sem abrir janela. `--smoke` renderiza 60 quadros, salva e fecha; `--village`, `--home` e `--shop` selecionam áreas para esse teste. `--screenshot arquivo.png` salva uma captura no final do smoke test. Os workflows usam Xvfb, o que não substitui testes em todas as distribuições/GPU.
+`--self-test` executa as regras sem abrir janela. `--smoke` renderiza 60 quadros, salva e fecha; `--village`, `--home` e `--shop` selecionam áreas para esse teste. `--export-art arquivo.png` exporta a folha de sprites para inspeção; ela usa células de 128 × 128, em 16 colunas e 12 linhas. O desenho original está em `Art.cs`. `--screenshot arquivo.png` salva uma captura no final do smoke test. Os workflows usam Xvfb, o que não substitui testes em todas as distribuições/GPU.
 
 Código e arte originais sob MIT. raylib: zlib/libpng. A fonte DejaVu Sans e sua licença estão incluídas. O executável apresenta os avisos com `--licenses`.

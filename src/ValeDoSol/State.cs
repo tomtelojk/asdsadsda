@@ -6,14 +6,15 @@ public struct Plot { public bool tilled, watered; public int crop, growth; }
 public enum Scene { FARM, VILLAGE, HOME, SHOP }
 public class State
 {
-    public int edition = 4;
+    public int edition = 5;
     [JsonRequired] public int version = 3, day = 1, minute = 480, coins = 120, energy = 100, max_energy = 100;
     [JsonRequired] public int[] seeds = [10, 5, 0], inventory = [0, 0, 0];
     public int wood, stone, fish, harvested, selected, watering_level = 1;
     public Scene scene;
     [JsonRequired] public Point player = new(400, 288);
     [JsonRequired] public Plot[] plots = Enumerable.Range(0, 48).Select(i => new Plot { tilled = i < 16, crop = i < 3 ? 0 : -1, growth = i < 3 ? 1 : 0 }).ToArray();
-    [JsonRequired] public int[] friendship = new int[4], talked_day = new int[4], gifted_day = new int[4];
+    [JsonRequired] public int[] friendship = new int[Social.Count], talked_day = new int[Social.Count], gifted_day = new int[Social.Count];
+    public int[] conversations = new int[Social.Count];
     public uint met, claimed, gathered, tutorial, rng = 4871;
     public bool rod;
 }
@@ -30,24 +31,28 @@ public static class Logic
     public const Scene FARM = Scene.FARM, VILLAGE = Scene.VILLAGE, HOME = Scene.HOME, SHOP = Scene.SHOP;
     public static readonly Crop[] CROPS = [new("Cenoura", 3, 15, 14, 0xef9c42), new("Nabo", 2, 10, 9, 0xeee1bc), new("Morango", 4, 25, 23, 0xdc6c79)];
     public static readonly Villager[] NPCS = [
-    new("Lia","Dona do armazém","Você deve ser a nova pessoa da Fazenda Girassol! Eu sou a Lia. A vila precisava desse seu jeito de recomeçar.",["Minha avó dizia: uma semente é uma promessa pequena. Regue as suas todos os dias, combinado?","Sempre tem espaço para uma conversa e um café por aqui. Como vai a sua horta?"],0xd69a70,0x694b3d,new(336,336),new(432,400)),
+    new("Lia","Dona do armazém","Você deve ser o novo fazendeiro da Fazenda Girassol! Eu sou a Lia. A vila precisava desse seu jeito de recomeçar.",["Minha avó dizia: uma semente é uma promessa pequena. Regue as suas todos os dias, combinado?","Sempre tem espaço para uma conversa e um café por aqui. Como vai a sua horta?"],0xd69a70,0x694b3d,new(336,336),new(432,400)),
  new("Bento","Carpinteiro","Bento. Carpinteiro, colecionador de pregos e péssimo contador de piadas. Se quiser melhorar seu regador, é comigo.",["Traga 8 madeiras e 60 moedas. Seu regador de cobre vai alcançar o canteiro escolhido e os quatro vizinhos.","Uma boa ferramenta dura anos. Uma amizade bem cuidada dura ainda mais."],0x819ca1,0x655e50,new(784,336),new(688,464)),
  new("Iara","Pescadora","O lago tem mais histórias do que peixes. Tome, uma vara antiga minha! Perto da água, aperte F e espere a fisgada.",["Quando aparecer AGORA, aperte Espaço. Se puxar antes ou depois, o peixe leva a isca e deixa a história.","Dias de chuva são os meus favoritos. O mundo fica quietinho e os peixes saem para conversar."],0xa28bb0,0x3e4e47,new(912,496),new(784,496)),
- new("Theo","Botânico","Sou Theo! Estou estudando o solo do vale. Três cenouras da sua horta seriam perfeitas para minha pesquisa.",["Pode levar o tempo que precisar. Cada coisa cresce no seu próprio ritmo por aqui.","Quando chove, deixe o regador em casa. A natureza também gosta de ajudar."],0x89a76b,0x9d714f,new(528,528),new(272,528))];
+ new("Theo","Botânico","Sou Theo! Estou estudando o solo do vale. Três cenouras da sua horta seriam perfeitas para minha pesquisa.",["Pode levar o tempo que precisar. Cada coisa cresce no seu próprio ritmo por aqui.","Quando chove, deixe o regador em casa. A natureza também gosta de ajudar."],0x89a76b,0x9d714f,new(528,528),new(272,528)),
+ new("Dora","Padeira","Sou Dora, da banca de pães. Você é o fazendeiro novo! Venha cedo qualquer dia; pão quentinho ajuda a enfrentar até uma horta teimosa.",["Aprendi a fazer pão com meu pai. A receita era simples: acordar cedo e nunca economizar no carinho.","Quero fazer uma torta com frutas de todas as estações. Primeiro preciso convencer Lia a me emprestar as formas."],0x9b5060,0xc3bab0,new(1120,304),new(656,560)),
+ new("Miguel","Cuidador da horta de ervas","Miguel. Cuido das ervas do vale e ajudo quem precisa de uma pausa. Se me encontrar agachado num canteiro, pode falar: eu sempre perco a noção da hora.",["Minha avó tratava o jardim como parte da família. Fiquei com os livros dela e a mania de conversar com as plantas.","Theo e eu queremos organizar uma pequena horta comunitária. Um lugar para aprender e dividir o que cresce."],0xd4d8be,0x343034,new(656,272),new(720,592)),
+ new("Ceci","Musicista","Ei! Sou Ceci. Se escutar alguém repetindo os mesmos três acordes, provavelmente sou eu tentando terminar uma música. Você chegou numa boa hora para a vila.",["Vim passar uma semana aqui e fiquei. O silêncio do vale me deu vontade de escrever músicas de novo.","Estou juntando coragem para tocar na feira. Bento faz o palco, Dora traz os pães e Otávio escolhe um poema."],0x398a87,0x47302d,new(400,560),new(688,432)),
+ new("Otávio","Guardião das histórias","Bem-vindo, rapaz. Sou Otávio. Guardo livros, mapas e algumas histórias que ficaram sem dono. Sua fazenda já apareceu em muitas delas.",["Quando eu era pequeno, a estrada até sua fazenda parecia enorme. Algumas distâncias diminuem quando a gente ganha companhia.","Se encontrar uma carta antiga ou um nome riscado numa árvore, me conte. A história do vale está espalhada por aí."],0x8b6a4b,0xaba090,new(976,336),new(368,560))];
     public static readonly Building[] FARM_BUILDINGS = [new(2, 2, 7, 5, 0, "Sua casa", 0xb97958)];
-    public static readonly Building[] VILLAGE_BUILDINGS = [new(4, 3, 7, 5, 1, "Armazém da Lia", 0xbb785a), new(23, 3, 7, 5, 2, "Oficina do Bento", 0x728b9a), new(14, 2, 6, 5, 3, "Casa das flores", 0xa88a9b)];
+    public static readonly Building[] VILLAGE_BUILDINGS = [new(4, 3, 7, 5, 1, "Armazém da Lia", 0xbb785a), new(23, 3, 7, 5, 2, "Oficina do Bento", 0x728b9a), new(14, 2, 6, 5, 3, "Casa das flores", 0xa88a9b), new(33, 3, 6, 5, 4, "Padaria da Dora", 0xab674c), new(39, 5, 6, 5, 4, "Casa dos livros", 0x7c7c96)];
     public static readonly Resource[] RESOURCES = [new(FARM, 10, 15, 0), new(FARM, 7, 13, 0), new(FARM, 16, 18, 0), new(VILLAGE, 21, 18, 0), new(FARM, 15, 15, 1), new(FARM, 30, 12, 1)];
     public static readonly int[][] FARM_TREES = [[1, 3], [11, 2], [14, 2], [17, 2], [20, 2], [23, 2], [27, 2], [31, 3], [33, 5], [2, 11], [10, 10], [2, 18], [6, 19], [10, 18], [32, 19], [22, 20]];
     public static readonly int[][] VILLAGE_TREES = [[1, 4], [2, 2], [12, 2], [22, 2], [32, 3], [33, 7], [2, 12], [4, 18], [8, 20], [19, 20], [33, 20], [21, 7]];
     static bool In(int n, int min, int max) => n >= min && n <= max;
     public static bool state_valid(State? s)
     {
-        if (s is null || s.version != 3 || !In(s.day, 1, 100000) || !In(s.minute, 360, 1440) || !In(s.coins, 0, 1_000_000_000) || !In(s.max_energy, 100, 200) || !In(s.energy, 0, s.max_energy) || !Enum.IsDefined(s.scene)) return false;
+        if (s is null || s.version != 3 || s.edition != 5 || !In(s.day, 1, 100000) || !In(s.minute, 360, 1440) || !In(s.coins, 0, 1_000_000_000) || !In(s.max_energy, 100, 200) || !In(s.energy, 0, s.max_energy) || !Enum.IsDefined(s.scene)) return false;
         if (!float.IsFinite(s.player.x) || !float.IsFinite(s.player.y) || s.player.x < 16 || s.player.x > world_size(s.scene).x - 16 || s.player.y < 32 || s.player.y > world_size(s.scene).y - 24) return false;
-        if (s.seeds?.Length != 3 || s.inventory?.Length != 3 || s.plots?.Length != 48 || s.friendship?.Length != 4 || s.talked_day?.Length != 4 || s.gifted_day?.Length != 4) return false;
+        if (s.seeds?.Length != 3 || s.inventory?.Length != 3 || s.plots?.Length != 48 || s.friendship?.Length != Social.Count || s.talked_day?.Length != Social.Count || s.gifted_day?.Length != Social.Count || s.conversations?.Length != Social.Count) return false;
         if (s.seeds.Any(n => !In(n, 0, 10_000_000)) || s.inventory.Any(n => !In(n, 0, 10_000_000)) || s.plots.Any(p => !In(p.crop, -1, 2) || !In(p.growth, 0, 100000))) return false;
         if (s.friendship.Any(n => !In(n, 0, 5)) || s.talked_day.Any(n => !In(n, 0, s.day)) || s.gifted_day.Any(n => !In(n, 0, s.day))) return false;
-        return new[] { s.wood, s.stone, s.fish, s.harvested }.All(n => In(n, 0, 10_000_000)) && In(s.selected, 0, 2) && In(s.watering_level, 1, 2) && s.met < 16 && s.claimed < 8 && s.gathered < 64 && s.tutorial < 8 && s.rng > 0 && s.rng < 2147483647;
+        return new[] { s.wood, s.stone, s.fish, s.harvested }.All(n => In(n, 0, 10_000_000)) && In(s.selected, 0, 2) && In(s.watering_level, 1, 2) && s.met < (1u << Social.Count) && s.claimed < 8 && s.gathered < 64 && s.tutorial < 8 && s.conversations.All(n => In(n, 0, 10_000_000)) && s.rng > 0 && s.rng < 2147483647;
     }
     public static bool state_save(State s, string path)
     {
@@ -56,7 +61,7 @@ public static class Logic
     }
     public static bool state_load(out State result, string path)
     {
-        result = new(); try { if (new FileInfo(path).Length > 200000) return false; var s = JsonSerializer.Deserialize(File.ReadAllText(path), SaveContext.Default.State); if (!state_valid(s)) return false; result = s!; return true; } catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException or NotSupportedException) { return false; }
+        result = new(); try { if (new FileInfo(path).Length > 200000) return false; string raw = File.ReadAllText(path); var s = JsonSerializer.Deserialize(raw, SaveContext.Default.State); using var meta = JsonDocument.Parse(raw); if (s is not null && !meta.RootElement.TryGetProperty("edition", out _)) s.edition = 3; if (s is not null && s.edition is 3 or 4 && s.friendship?.Length == 4 && s.talked_day?.Length == 4 && s.gifted_day?.Length == 4) { Array.Resize(ref s.friendship, Social.Count); Array.Resize(ref s.talked_day, Social.Count); Array.Resize(ref s.gifted_day, Social.Count); s.conversations = new int[Social.Count]; s.edition = 5; } if (s is not null && s.edition is >= 3 and <= 5) s.edition = 5; if (!state_valid(s)) return false; result = s!; return true; } catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException or NotSupportedException) { return false; }
     }
     public static bool raining(State s) => s.day % 4 == 0;
     public static int next_day(State s) { int grown = 0; foreach (ref Plot p in s.plots.AsSpan()) { if (p.crop >= 0 && (p.watered || raining(s))) { p.growth = Math.Min(CROPS[p.crop].days, p.growth + 1); grown++; } p.watered = false; } s.day = Math.Min(100000, s.day + 1); s.minute = 480; s.energy = s.max_energy; s.gathered = 0; if (raining(s)) foreach (ref Plot p in s.plots.AsSpan()) if (p.tilled) p.watered = true; return grown; }
@@ -75,10 +80,10 @@ public static class Logic
     }
     public static bool buy_seeds(State s, int c) { if (!In(c, 0, 2) || s.coins < CROPS[c].price || s.seeds[c] > 9999995) return false; s.coins -= CROPS[c].price; s.seeds[c] += 5; return true; }
     public static int sell_all(State s) { long total = (long)s.fish * 18; for (int i = 0; i < 3; i++) total += (long)s.inventory[i] * CROPS[i].sell; if (total + s.coins > 1000000000) return -1; s.fish = 0; Array.Clear(s.inventory); s.coins += (int)total; return (int)total; }
-    public static void talk_to(State s, int npc) { if (!In(npc, 0, 3)) return; s.met |= 1u << npc; if (s.talked_day[npc] != s.day) { s.talked_day[npc] = s.day; s.friendship[npc] = Math.Min(5, s.friendship[npc] + 1); } if (npc == 2) s.rod = true; }
-    public static bool give_gift(State s, int npc) { if (!In(npc, 0, 3) || s.gifted_day[npc] == s.day) return false; int i = Array.FindIndex(s.inventory, n => n > 0); if (i < 0) return false; s.inventory[i]--; s.gifted_day[npc] = s.day; s.friendship[npc] = Math.Min(5, s.friendship[npc] + 1); return true; }
+    public static void talk_to(State s, int npc) { if (!In(npc, 0, Social.Count - 1)) return; s.met |= 1u << npc; if (s.talked_day[npc] != s.day) { s.talked_day[npc] = s.day; s.friendship[npc] = Math.Min(5, s.friendship[npc] + 1); } if (npc == 2) s.rod = true; }
+    public static bool give_gift(State s, int npc) { if (!In(npc, 0, Social.Count - 1) || s.gifted_day[npc] == s.day) return false; int i = Array.FindIndex(s.inventory, n => n > 0); if (i < 0) return false; s.inventory[i]--; s.gifted_day[npc] = s.day; s.friendship[npc] = Math.Min(5, s.friendship[npc] + 1); return true; }
     public static bool upgrade_can(State s) { if (s.watering_level == 2 || s.wood < 8 || s.coins < 60) return false; s.wood -= 8; s.coins -= 60; s.watering_level = 2; return true; }
-    public static bool claim_quest(State s, int q) { if (!In(q, 0, 2) || (s.claimed & (1u << q)) != 0) return false; int reward = new[] { 40, 60, 75 }[q]; if ((q == 0 && s.met != 15) || (q == 1 && s.harvested < 5) || (q == 2 && s.inventory[0] < 3) || s.coins > 1000000000 - reward) return false; if (q == 2) s.inventory[0] -= 3; s.claimed |= 1u << q; s.coins += reward; return true; }
+    public static bool claim_quest(State s, int q) { if (!In(q, 0, 2) || (s.claimed & (1u << q)) != 0) return false; int reward = new[] { 40, 60, 75 }[q]; if ((q == 0 && (s.met & 15) != 15) || (q == 1 && s.harvested < 5) || (q == 2 && s.inventory[0] < 3) || s.coins > 1000000000 - reward) return false; if (q == 2) s.inventory[0] -= 3; s.claimed |= 1u << q; s.coins += reward; return true; }
     public static float random_unit(State s) { s.rng = (uint)((ulong)s.rng * 16807u % 2147483647u); return (s.rng - 1) / 2147483646f; }
     public static Point plot_position(int i) => new(544 + i % 8 * 32, 256 + i / 8 * 32);
     public static int plot_at(float x, float y) { int c = (int)MathF.Floor(x / 32) - 17, r = (int)MathF.Floor(y / 32) - 8; return c >= 0 && c < 8 && r >= 0 && r < 6 ? r * 8 + c : -1; }
@@ -92,7 +97,7 @@ public static class Logic
         _ => []
     };
     static readonly int[][] FarmForest = BuildForest(FARM), VillageForest = BuildForest(VILLAGE);
-    static int[][] BuildForest(Scene scene) { var trees = (scene == FARM ? FARM_TREES : VILLAGE_TREES).ToList(); for (int i = 0; i < 150; i++) { int x = (96 + i * 239 % 1856) / 32 * 32 + 16, y = (64 + i * 337 % 1248) / 32 * 32 + 20; if (x < 1120 && y < 736 || y > 316 && y < 440 || Math.Abs(x - 432) < 80 || Math.Abs(x - 1056) < 64) continue; if (water_bodies(scene).Any(w => x > w.x - 70 && x < w.x + w.width + 70 && y > w.y - 20 && y < w.y + w.height + 90)) continue; trees.Add([(x - 16) / 32, (y - 20) / 32]); } return trees.ToArray(); }
+    static int[][] BuildForest(Scene scene) { var trees = (scene == FARM ? FARM_TREES : VILLAGE_TREES).ToList(); for (int i = 0; i < 150; i++) { int x = (96 + i * 239 % 1856) / 32 * 32 + 16, y = (64 + i * 337 % 1248) / 32 * 32 + 20; if (x < 1120 && y < 736 || y > 316 && y < 440 || Math.Abs(x - 432) < 80 || Math.Abs(x - 1056) < 64) continue; if (water_bodies(scene).Any(w => x > w.x - 70 && x < w.x + w.width + 70 && y > w.y - 20 && y < w.y + w.height + 90)) continue; if ((scene == FARM ? FARM_BUILDINGS : VILLAGE_BUILDINGS).Any(b => x > b.x * 32 - 60 && x < (b.x + b.w) * 32 + 60 && y > b.y * 32 - 60 && y < (b.y + b.h) * 32 + 100)) continue; trees.Add([(x - 16) / 32, (y - 20) / 32]); } return trees.Where(t => !(scene == FARM ? FARM_BUILDINGS : VILLAGE_BUILDINGS).Any(b => t[0] >= b.x && t[0] < b.x + b.w && t[1] >= b.y && t[1] < b.y + b.h)).ToArray(); }
     public static int[][] scene_trees(Scene scene) => scene == FARM ? FarmForest : scene == VILLAGE ? VillageForest : [];
     public static bool blocked(Scene scene, float x, float y)
     {

@@ -26,17 +26,7 @@ public static class Ui
         if (over) SetMouseCursor(MOUSE_CURSOR_POINTING_HAND); return over && (g.dialog == D_NONE || g.dialog_age > .16f) && IsMouseButtonReleased(MOUSE_BUTTON_LEFT);
     }
     static void heart(int x, int y, bool full) { Color c = color_hex(full ? 0xb9524a : 0xb8a17b); DrawRectangle(x, y + 2, 5, 5, c); DrawRectangle(x + 7, y + 2, 5, 5, c); DrawRectangle(x + 2, y + 6, 9, 4, c); DrawRectangle(x + 5, y + 10, 3, 3, c); }
-    static void portrait(int npc, int x, int y, float scale = 2)
-    {
-        uint hair = npc < 0 ? 0x765b42 : NPCS[npc].hair, coat = npc < 0 ? 0x72939c : NPCS[npc].coat;
-        void P(int dx, int dy, int w, int h, long color) => DrawRectangle(x + dx * scale, y + dy * scale, w * scale, h * scale, color_hex(color));
-        P(6, 30, 35, 24, coat); P(4, 41, 39, 15, coat); P(16, 24, 15, 10, 0xd8a27b); P(11, 7, 25, 24, 0xe9ba90); P(10, 3, 27, 10, hair); P(9, 10, 6, 18, hair); P(14, 5, 19, 5, hair); P(17, 17, 3, 4, 0x493b31); P(29, 17, 3, 4, 0x493b31); P(23, 25, 7, 2, 0xba7b63); P(16, 24, 4, 2, 0xda967d);
-        if (npc < 0) { P(5, 5, 36, 5, 0xd5b373); P(10, -2, 26, 8, 0xead195); P(10, 5, 26, 3, 0x9e743f); P(14, 33, 18, 21, 0x648d9b); }
-        if (npc == 0) { P(32, 7, 6, 6, 0xe8ca7b); P(34, 5, 2, 10, 0xe8ca7b); }
-        if (npc == 1) { P(14, 25, 20, 6, hair); P(19, 25, 9, 2, 0xd7a27b); }
-        if (npc == 2) { P(6, 4, 35, 5, 0x7a8f83); P(13, -2, 23, 8, 0x7a8f83); P(5, 9, 8, 21, hair); }
-        if (npc == 3) { P(12, 31, 23, 4, 0xe4c58c); }
-    }
+    static void portrait(int npc, int x, int y, float scale = 2) => Art.PortraitDraw(npc, x, y, 47 * scale);
     public static void tool_icon(int tool, double x, double y, double scale)
     {
         Camera2D camera = new() { offset = new(x, y), target = new(0, 0), rotation = 0, zoom = (float)scale }; BeginMode2D(camera);
@@ -59,7 +49,7 @@ public static class Ui
         string path = Path.Combine(g.save_dir, "backup.json");
         if (!restore) { game_toast(g, state_save(g.s, path) ? "Backup criado na pasta de saves: backup.json." : "Não foi possível criar o backup."); return; }
         if (!state_load(out State s, path)) { game_toast(g, "Não foi encontrado um backup válido na pasta de saves."); return; }
-        g.s = s; g.path_length = 0; g.pending = new(); g.fishing = 0; for (int i = 0; i < 4; i++) { g.npc_phase[i] = s.minute >= 780 ? 1 : 0; g.npc_position[i] = s.minute >= 780 ? NPCS[i].afternoon : NPCS[i].morning; g.npc_length[i] = g.npc_at[i] = 0; }
+        g.s = s; g.path_length = 0; g.pending = new(); g.fishing = 0; safe_position(g); reset_npcs(g);
         g.camera = camera_target(g.s); g.location_timer = 4; game_save(g); game_toast(g, "Backup restaurado. Bem-vindo de volta!");
     }
     static void hud(Game g)
@@ -90,7 +80,7 @@ public static class Ui
     }
     static void inventory(Game g)
     {
-        State s = g.s; frame(new(280, 90, 720, 536)); string[] tabs = ["Mochila [I]", "Diário [J]", "Moradores [R]"];
+        State s = g.s; frame(g.tab == 2 ? new(180, 70, 920, 556) : new(280, 90, 720, 536)); string[] tabs = ["Mochila [I]", "Diário [J]", "Moradores [R]"];
         for (int i = 0; i < 3; i++) if (button(g, new(300 + i * 216, 108, 208, 38), tabs[i], true, g.tab == i)) g.tab = i;
         if (button(g, new(956, 108, 26, 30), "X")) { g.dialog = D_NONE; return; }
         if (g.tab == 0)
@@ -103,24 +93,34 @@ public static class Ui
         }
         else if (g.tab == 1)
         {
-            string[] names = ["Rostos do vale", "O fruto do trabalho", "A pesquisa de Theo"], desc = ["Conheça os quatro moradores da vila.", "Colha 5 vegetais na fazenda.", "Entregue 3 cenouras para Theo."]; int[] counts = [System.Numerics.BitOperations.PopCount(s.met), s.harvested, s.inventory[0]], targets = [4, 5, 3], reward = [40, 60, 75];
+            string[] names = ["Rostos do vale", "O fruto do trabalho", "A pesquisa de Theo"], desc = ["Conheça Lia, Bento, Iara e Theo.", "Colha 5 vegetais na fazenda.", "Entregue 3 cenouras para Theo."]; int[] counts = [System.Numerics.BitOperations.PopCount(s.met & 15), s.harvested, s.inventory[0]], targets = [4, 5, 3], reward = [40, 60, 75];
             for (int i = 0; i < 3; i++) { int y = 177 + i * 132; frame(new(308, y, 664, 112)); text(names[i], 326, y + 13, 23); text(desc[i], 326, y + 45, 18); DrawRectangle(326, y + 78, 400, 6, color_hex(0xb28d5c)); DrawRectangle(326, y + 78, 400 * Math.Min(1, (double)counts[i] / targets[i]), 6, color_hex(0x849958)); text($"{Math.Min(counts[i], targets[i])}/{targets[i]}  +{reward[i]} G", 746, y + 18, 17); bool done = (s.claimed & (1u << i)) != 0; if (done) text("Concluída", 794, y + 68, 18); else if (i == 2) text("Fale com Theo", 794, y + 68, 17); else if (button(g, new(790, y + 61, 160, 33), "Receber", counts[i] >= targets[i])) { if (claim_quest(s, i)) { game_save(g); game_toast(g, "Missão concluída!"); } } }
         }
         else
         {
-            for (int i = 0; i < 4; i++) { int x = 309 + i % 2 * 337, y = 185 + i / 2 * 190; frame(new(x, y, 319, 170)); portrait(i, x + 12, y + 20, 1.8f); text((s.met & (1u << i)) != 0 ? NPCS[i].name : "???", x + 110, y + 23, 27); wrap(NPCS[i].role, x + 110, y + 66, 191, 17, 23); for (int k = 0; k < 5; k++) heart(x + 112 + k * 24, y + 119, k < s.friendship[i]); }
-            text("Converse e dê presentes para criar laços com os moradores.", 319, 589, 17);
+            for (int i = 0; i < Social.Count; i++)
+            {
+                int x = 201 + i % 2 * 449, y = 164 + i / 2 * 108; bool met = (s.met & (1u << i)) != 0;
+                frame(new(x, y, 427, 98)); portrait(i, x + 8, y + 8, 1.6f); text(met ? NPCS[i].name : "???", x + 94, y + 7, 22); text(NPCS[i].role, x + 94, y + 34, 15);
+                for (int k = 0; k < 5; k++) heart(x + 94 + k * 20, y + 58, k < s.friendship[i]);
+                text(met ? Social.Now(i, s).activity : "Ainda não se conheceram", x + 94, y + 79, 13, 0x846044);
+            }
+            text("Chuva e fins de semana mudam os encontros e as rotinas.", 310, 604, 16);
+
         }
     }
     static void dialogue(Game g)
     {
-        State s = g.s; int n = g.npc; frame(new(86, 446, 1108, 248)); frame(new(105, 463, 160, 178)); portrait(n, 118, 476, 2.9f); text(NPCS[n].name, 120, 655, 26); text(NPCS[n].role, 295, 465, 16, 0x927047);
-        int letters = Math.Clamp((int)(Math.Max(0, g.dialog_age - .1f) * 55), 0, g.reply.Length); wrap(g.reply[..letters], 295, 496, 872, 21, 30);
-        if (n == 0 && button(g, new(298, 640, 270, 34), "Comprar e vender")) game_modal(g, D_SHOP);
+        State s = g.s; int n = g.npc; frame(new(86, 396, 1108, 298)); frame(new(105, 413, 160, 178)); portrait(n, 118, 429, 2.9f); text(NPCS[n].name, 120, 605, 26); text(NPCS[n].role, 295, 415, 16, 0x927047); text(Social.Now(n, s).activity, 295, 438, 14, 0x927047);
+        int letters = Math.Clamp((int)(Math.Max(0, g.dialog_age - .1f) * 55), 0, g.reply.Length); wrap(g.reply[..letters], 295, 468, 872, 21, 29);
+        string[] topics = ["Seu trabalho [Q]", "Algo pessoal [T]", "Como vai o dia? [Y]"]; int[] keys = [81, 84, 89];
+        for (int i = 0; i < 3; i++) if (button(g, new(298 + i * 293, 590, 284, 33), topics[i]) || (g.dialog_age > .2f && IsKeyPressed(keys[i]))) { g.reply = Social.Topic(s, n, i); g.dialog_age = 0; game_save(g); }
+
+        if (n == 0 && button(g, new(298, 640, 270, 34), "Comprar e vender", g.s.scene == SHOP && g.npc_scene[0] == SHOP)) game_modal(g, D_SHOP);
         if (n == 1 && button(g, new(298, 640, 270, 34), s.watering_level == 2 ? "Regador melhorado" : "Regador: 60 G + 8 madeiras", s.watering_level < 2)) { g.reply = upgrade_can(s) ? "Prontinho! Agora seu regador molha o canteiro escolhido e seus quatro vizinhos." : "Preciso de 8 madeiras e 60 moedas. Recolha os troncos pela fazenda e volte quando puder."; g.dialog_age = 0; game_save(g); }
         if (n == 3 && (s.claimed & 4) == 0 && button(g, new(298, 640, 270, 34), "Entregar 3 cenouras", s.inventory[0] >= 3)) { claim_quest(s, 2); g.reply = "Perfeitas! Muito obrigado por ajudar na minha pesquisa. Aqui estão suas 75 moedas."; g.dialog_age = 0; game_save(g); }
-        if (n == 2) text("Você recebeu uma vara de pesca!", 298, 649, 17, 0x887045);
-        if (button(g, new(585, 640, 245, 34), "Dar um presente", s.inventory.Any(x => x > 0) && s.gifted_day[n] != s.day)) { give_gift(s, n); g.reply = "Para mim? Que carinho! Vou guardar esse presente com um sorriso."; g.dialog_age = 0; game_save(g); }
+        if (n == 2) text("Sua vara está na tecla 9.", 298, 649, 17, 0x887045); if (n >= 4) text("Converse pelos assuntos acima.", 298, 649, 17, 0x887045);
+        if (button(g, new(585, 640, 245, 34), "Dar um presente", s.inventory.Any(x => x > 0) && s.gifted_day[n] != s.day)) { give_gift(s, n); g.reply = Social.GiftReply(n); g.dialog_age = 0; game_save(g); }
         if (button(g, new(847, 640, 324, 34), "Até mais! [E]")) g.dialog = D_NONE;
         if (g.dialog_age > .2f && (IsKeyPressed(KEY_E) || IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE))) { if (letters < g.reply.Length) g.dialog_age = g.reply.Length / 55f + 1; else g.dialog = D_NONE; }
     }
