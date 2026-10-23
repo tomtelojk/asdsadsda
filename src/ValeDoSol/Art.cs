@@ -74,7 +74,7 @@ public static class Art
     {
         uint skin = Skins[who], hair = Hairs[who], coat = Coats[who]; bool woman = who is 1 or 3 or 5 or 7;
         if (woman) p.Shape(64, 60, 42, 49, Shade(hair, -14));
-        p.Shape(64, 117, 47, 25, coat); p.Ellipse(54, 108, 31, 17, Shade(coat, 22)); p.Rect(56, 84, 18, 22, Shade(skin, -14));
+        p.Shape(64, 105, 45, 18, coat); p.Ellipse(54, 102, 28, 14, Shade(coat, 22)); p.Rect(56, 84, 18, 22, Shade(skin, -14));
         p.Shape(64, 60, 30, 34, skin); p.Ellipse(56, 49, 19, 21, Shade(skin, 15)); p.Shape(32, 61, 5, 8, skin); p.Shape(96, 61, 5, 8, skin);
         p.Ellipse(64, 32, 32, 19, hair); p.Ellipse(36, 48, 9, 22, hair); p.Ellipse(92, 46, 9, 20, hair);
         for (int i = 0; i < 7; i++) p.Ellipse(40 + i * 8, 31 + i % 2 * 6, 10, 11, i % 2 == 0 ? Shade(hair, 15) : hair);
@@ -83,10 +83,10 @@ public static class Art
         if (woman) { p.Ellipse(43, 74, 6, 2, 0xdb947d); p.Ellipse(85, 74, 6, 2, 0xdb947d); }
         if (who is 2 or 8) { p.Ellipse(64, 85, 23, who == 2 ? 12 : 5, hair); p.Rect(56, 80, 15, 3, skin); }
         if (who is 4 or 8) { p.Rect(39, 49, 22, 18, 0x675641); p.Rect(41, 51, 18, 13, 0xabc2a8); p.Rect(69, 49, 22, 18, 0x675641); p.Rect(71, 51, 18, 13, 0xabc2a8); p.Line(61, 55, 69, 55, 0x675641, 2); }
-        if (who == 0) { p.Shape(64, 32, 49, 9, 0xb88537); p.Shape(64, 20, 34, 16, 0xe9bf64); p.Ellipse(56, 14, 24, 8, 0xf6d583); p.Rect(32, 27, 64, 6, 0x3b7146); p.Line(21, 34, 107, 34, 0xf7d78e, 2); p.Rect(39, 102, 9, 25, 0x2d5b3e); p.Rect(81, 102, 9, 25, 0x2d5b3e); }
-        if (who == 1) { p.Shape(89, 19, 17, 17, hair); p.Flower(97, 36, 0xffefd4); p.Flower(100, 30, 0xffefd4); p.Rect(49, 105, 30, 18, 0xe6bd69); }
+        if (who == 0) { p.Shape(64, 32, 49, 9, 0xb88537); p.Shape(64, 20, 34, 16, 0xe9bf64); p.Ellipse(56, 14, 24, 8, 0xf6d583); p.Rect(32, 27, 64, 6, 0x3b7146); p.Line(21, 34, 107, 34, 0xf7d78e, 2); p.Rect(39, 102, 9, 19, 0x2d5b3e); p.Rect(81, 102, 9, 19, 0x2d5b3e); }
+        if (who == 1) { p.Shape(89, 19, 17, 17, hair); p.Flower(97, 36, 0xffefd4); p.Flower(100, 30, 0xffefd4); p.Rect(49, 102, 30, 18, 0xe6bd69); }
         if (who == 3) { p.Shape(64, 18, 35, 9, 0x8a7eaa); p.Line(34, 23, 95, 23, 0xb6a2ca, 3); }
-        if (who == 5) { p.Flower(94, 37, 0xe3a0ac); p.Rect(43, 109, 43, 16, 0xefdfc4); }
+        if (who == 5) { p.Flower(94, 37, 0xe3a0ac); p.Rect(43, 105, 43, 15, 0xefdfc4); }
         if (who == 7) for (int i = 0; i < 7; i++) p.Shape(37 + i * 9, 23 + Math.Abs(3 - i) * 5, 10, 10, i % 2 == 0 ? hair : Shade(hair, 16));
     }
     public static Canvas CreateAtlas()
@@ -122,7 +122,7 @@ public static class Art
     {
         DrawTexturePro(atlas, new(id % Columns * Cell, id / Columns * Cell, Cell, Cell), new(x - 64 * scale, y - 116 * scale, Cell * scale, Cell * scale), new(), 0, tint ?? WHITE);
     }
-    public static void Person(int npc, double x, double y, int face, double time = 0) { int frame = time <= 0 ? 0 : (int)(time * 8) % 4; Draw((npc + 1) * 16 + face * 4 + frame, x, y, .78); }
+    public static void Person(int npc, double x, double y, int face, double time = 0) { int frame = time <= 0 ? 0 : (int)(time * 8) % 4; Draw((npc + 1) * 16 + face * 4 + frame, Math.Round(x * 2) / 2, Math.Round(y * 2) / 2, .5); }
     public static void PortraitDraw(int npc, double x, double y, double size) => DrawTexturePro(atlas, new((Portrait + npc + 1) % Columns * Cell, (Portrait + npc + 1) / Columns * Cell, Cell, Cell), new(x, y, size, size), new(), 0, WHITE);
     public static bool Export(string path) { Image image = LoadImageFromTexture(atlas); bool ok = ExportImage(image, path); UnloadImage(image); return ok; }
 }

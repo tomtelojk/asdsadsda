@@ -18,6 +18,8 @@ public static class Map
     public static Point Size(Scene scene) => scene == Scene.HOME ? new(640, 480) : Indoors(scene) ? new(704, 512) : new(WORLD_W, WORLD_H);
     public static Point Exit(Scene scene) { Point size = Size(scene); return new(size.x / 2, size.y - 48); }
     public static Point Arrival(Scene scene) { Point exit = Exit(scene); return new(exit.x, exit.y - 48); }
+    public static Point BedApproach(Scene scene) { var b = Props(scene).First(p => p.kind == Furnishing.Bed).bounds; return new(b.x - 20, b.y + b.height - 24); }
+    public static Point ServicePoint(Scene scene) { var b = Props(scene).First(p => p.kind == Furnishing.Counter).bounds; return new(b.x + b.width / 2, b.y + b.height + 20); }
     public static Rectangle Footprint(Building b) => new(b.x * 32, b.y * 32 + 32, b.w * 32, b.h * 32 - 32);
     public static Rectangle[] Roads(Scene scene)
     {
@@ -31,11 +33,29 @@ public static class Map
     public static bool Touch(Rectangle a, Rectangle b) => a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
     public static Rectangle Inflated(Rectangle r, int amount) => new(r.x - amount, r.y - amount, r.width + amount * 2, r.height + amount * 2);
     public static readonly Rectangle Fountain = new(512, 480, 96, 64);
+    public static readonly Rectangle CommunityBed = new(736, 672, 240, 160);
     static readonly Dictionary<Scene, Prop[]> rooms = BuildRooms();
     public static Prop[] Props(Scene scene) => rooms.GetValueOrDefault(scene, []);
     static Dictionary<Scene, Prop[]> BuildRooms()
     {
-        Prop P(Furnishing k, int x, int y, int w, int h, string description = "", bool solid = true) => new(k, new(x, y, w, h), solid, description);
+        // Match collision rectangles to complete artwork, anchored at its original base.
+        Prop P(Furnishing k, int x, int y, int w, int h, string description = "", bool solid = true)
+        {
+            int nw = w, nh = h;
+            switch (k)
+            {
+                case Furnishing.Bed: nw = 48; nh = 81; break;
+                case Furnishing.Table: int scale = w >= 144 ? 2 : 1; nw = 64 * scale; nh = 46 * scale; break;
+                case Furnishing.Fireplace: nw = 64; nh = 54; break;
+                case Furnishing.Chest: nw = 64; nh = 48; break;
+                case Furnishing.Shelf: case Furnishing.Books: case Furnishing.Counter: nw = Math.Max(32, w / 32 * 32); nh = 69; break;
+                case Furnishing.Kitchen: nw = w >= 128 ? 128 : 64; nh = nw / 64 * 27; break;
+                case Furnishing.Bench: nw = Math.Max(64, w / 64 * 64); nh = 46; break;
+                case Furnishing.Crates: nw = Math.Max(1, w / 32) * 32 - 4; nh = 38; break;
+                case Furnishing.Plant: nw = Math.Max(32, w / 32 * 32); nh = 32; break;
+            }
+            return new(k, new(x + (w - nw) / 2, y + h - nh, nw, nh), solid, description);
+        }
         return new()
         {
             [Scene.HOME] = [P(Furnishing.Rug, 224, 240, 160, 96, solid: false), P(Furnishing.Bed, 432, 96, 112, 128, "Uma cama quentinha. E para descansar ao lado."), P(Furnishing.Table, 112, 128, 96, 64, "Uma xícara de chá e seu caderno da fazenda."), P(Furnishing.Fireplace, 48, 80, 96, 48, "O fogo estala baixinho. Sua casa está aquecida."), P(Furnishing.Chest, 512, 304, 64, 40, "Seu baú de lembranças. O progresso está salvo."), P(Furnishing.Shelf, 208, 88, 96, 32, "Livros de cultivo e cartas de quem morou aqui antes."), P(Furnishing.Kitchen, 48, 304, 112, 48, "Uma cozinha pequena, mas pronta para as suas colheitas."), P(Furnishing.Plant, 560, 96, 32, 32, "As flores procuram a luz da janela.")],
@@ -58,6 +78,7 @@ public static class Map
             Rectangle canopy = new(x - 48, y - 104, 96, 116);
             if (roads.Any(r => Touch(canopy, Inflated(r, 12))) || Places(scene).Any(p => Touch(canopy, Inflated(new(p.building.x * 32, p.building.y * 32 - 16, p.building.w * 32, p.building.h * 32 + 64), 16))) || water_bodies(scene).Any(r => Touch(canopy, Inflated(r, 16)))) continue;
             if (scene == Scene.FARM && Touch(canopy, new(496, 192, 352, 336))) continue;
+            if (scene == Scene.VILLAGE && Touch(canopy, Inflated(CommunityBed, 20))) continue;
             if (result.Any(t => Math.Abs(x - (t[0] * 32 + 16)) < 64 && Math.Abs(y - (t[1] * 32 + 16)) < 72)) continue;
             result.Add([(x - 16) / 32, (y - 16) / 32]);
         }

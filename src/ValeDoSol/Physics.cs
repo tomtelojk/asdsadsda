@@ -40,6 +40,7 @@ public static class Physics
     }
     public static int FindPath(Scene scene, Point from, Point to, Point[] output)
     {
+        if (output.Length == 0) return 0;
         if (Blocked(scene, from.x, from.y) || Blocked(scene, to.x, to.y)) return 0;
         if (Clear(scene, from, to)) { if (Distance(from, to) < .1f) return 0; output[0] = to; return 1; }
         Point size = Map.Size(scene); int cols = (int)size.x / 16, rows = (int)size.y / 16;

@@ -2,7 +2,7 @@ name: Publicar CSharp Linux
 on:
   workflow_dispatch:
   push:
-    tags: ['v6*']
+    tags: ['v7*']
 permissions:
   contents: write
 jobs:
@@ -35,6 +35,6 @@ jobs:
           tag="v$version"
           binary="release/Vale-do-Sol-CSharp-$version-Linux-x86_64"
           if ! gh release view "$tag" >/dev/null 2>&1; then
-            gh release create "$tag" --draft --target "$GITHUB_SHA" --title "Vale do Sol $version · Caminhos do vale" --notes-file docs/RELEASE.md
+            gh release create "$tag" --draft --target "$GITHUB_SHA" --title "Vale do Sol $version · O Caderno das Estações" --notes-file docs/RELEASE.md
           fi
           gh release upload "$tag" "$binary" "$binary.tar.gz" release/SHA256SUMS-CSharp --clobber

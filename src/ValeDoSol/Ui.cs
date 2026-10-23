@@ -5,12 +5,12 @@ using static ValeDoSol.GameLogic;
 using static ValeDoSol.Dialog;
 namespace ValeDoSol;
 
-public static class Ui
+public static partial class Ui
 {
     public static readonly Rectangle Hotbar = new(371, 638, 538, 68);
     static readonly Rectangle BagButton = new(20, 650, 48, 48);
     static bool hit(Game g, Rectangle r) => CheckCollisionPointRec(g.mouse, r);
-    public static bool hud_hit(Point p) => CheckCollisionPointRec(p, Hotbar) || CheckCollisionPointRec(p, BagButton) || CheckCollisionPointRec(p, new(1046, 12, 222, 170));
+    public static bool hud_hit(Point p) => CheckCollisionPointRec(p, Hotbar) || CheckCollisionPointRec(p, BagButton) || CheckCollisionPointRec(p, new(1046, 12, 222, 170)) || CheckCollisionPointRec(p, new(16, 17, 320, 73));
     static void text(string s, double x, double y, int size, long color = 0x55371f) => DrawText(s, x, y, size, color_hex(color));
     static int wrap(string s, int x, int y, int width, int size, int line, long color = 0x55371f) { foreach (string paragraph in s.Split('\n')) { string current = ""; foreach (string word in paragraph.Split(' ', StringSplitOptions.RemoveEmptyEntries)) { string candidate = current.Length == 0 ? word : current + " " + word; if (current.Length > 0 && MeasureText(candidate, size) > width) { text(current, x, y, size, color); y += line; current = word; } else current = candidate; } if (current.Length > 0) { text(current, x, y, size, color); y += line; } } return y; }
     static void frame(Rectangle r, bool dark = false)
@@ -54,7 +54,9 @@ public static class Ui
     }
     static void hud(Game g)
     {
-        State s = g.s; frame(new(1050, 16, 214, 112)); string[] season = ["Primavera", "Verão", "Outono", "Inverno"], week = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
+        State s = g.s;
+        if (g.dialog == D_NONE) { var chapter = Story.Current(s); frame(new(20, 21, 312, 65)); text("Caderno de Aurora [J]", 33, 31, 16, 0x89623a); text(chapter.Title, 33, 56, 16); if (hit(g, new(20, 21, 312, 65)) && IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) { g.tab = 1; game_modal(g, D_MENU); } }
+        frame(new(1050, 16, 214, 112)); string[] season = ["Primavera", "Verão", "Outono", "Inverno"], week = ["Seg", "Ter", "Qua", "Qui", "Sex", "Sáb", "Dom"];
         text($"{week[(s.day - 1) % 7]}, {(s.day - 1) % 28 + 1} de {season[((s.day - 1) / 28) % 4]}", 1065, 29, 18);
         DrawRectangle(1062, 57, 190, 2, color_hex(0xc6975c)); text($"{s.minute / 60:00}:{s.minute % 60:00}", 1115, 71, 29);
         if (raining(s)) { for (int i = 0; i < 4; i++) DrawLineEx(new(1073 + i * 7, 74), new(1069 + i * 7, 90), 2, color_hex(0x6597b2)); } else { DrawCircle(1081, 84, 11, color_hex(0xd2993e)); for (int i = 0; i < 8; i++) { double a = i * Math.PI / 4; DrawRectangle(1080 + Math.Cos(a) * 17, 83 + Math.Sin(a) * 17, 3, 3, color_hex(0xd2993e)); } }
@@ -74,13 +76,13 @@ public static class Ui
         if (g.dialog == D_NONE)
         {
             string hint = interaction_hint(g); if (hint.Length > 0) { int width = MeasureText(hint, 17) + 30; DrawRectangle((UI_W - width) / 2, 594, width, 29, new Color(47, 38, 24, 194)); text(hint, (UI_W - width) / 2 + 15, 600, 17, 0xffedc3); }
-            if (g.toast_timer > 0) { int width = Math.Min(1010, MeasureText(g.toast, 17) + 34); frame(new((UI_W - width) / 2, 548, width, 36)); text(g.toast, (UI_W - width) / 2 + 17, 557, 17); }
+            if (g.toast_timer > 0) { var lines = TextLayout.Wrap(g.toast, 930, v => MeasureText(v, 17)); int width = Math.Min(970, lines.Max(v => MeasureText(v, 17)) + 34), height = lines.Count * 23 + 16, top = 584 - height; frame(new((UI_W - width) / 2, top, width, height)); int y = top + 8; foreach (var line in lines) { text(line, (UI_W - width) / 2 + 17, y, 17); y += 23; } }
         }
         if (g.fishing != 0) { string prompt = g.fishing == 2 ? "AGORA! Aperte ESPAÇO" : "Esperando a fisgada..."; int w = MeasureText(prompt, 24) + 44; frame(new((UI_W - w) / 2, 140, w, 51)); text(prompt, (UI_W - w) / 2 + 22, 153, 24, g.fishing == 2 ? 0x9e4f32 : 0x55371f); }
     }
     static void inventory(Game g)
     {
-        State s = g.s; frame(g.tab == 2 ? new(180, 70, 920, 556) : new(280, 90, 720, 536)); string[] tabs = ["Mochila [I]", "Diário [J]", "Moradores [R]"];
+        State s = g.s; frame(g.tab == 2 ? new(180, 70, 920, 556) : g.tab == 1 ? new(190, 86, 900, 540) : new(280, 90, 720, 536)); string[] tabs = ["Mochila [I]", "Diário [J]", "Moradores [R]"];
         for (int i = 0; i < 3; i++) if (button(g, new(300 + i * 216, 108, 208, 38), tabs[i], true, g.tab == i)) g.tab = i;
         if (button(g, new(956, 108, 26, 30), "X")) { g.dialog = D_NONE; return; }
         if (g.tab == 0)
@@ -93,6 +95,8 @@ public static class Ui
         }
         else if (g.tab == 1)
         {
+            if (g.journal_page == 0) { draw_journal(g, 190, 86); return; }
+            if (button(g, new(746, 151, 223, 25), "Voltar à história")) { g.journal_page = 0; return; }
             string[] names = ["Rostos do vale", "O fruto do trabalho", "A pesquisa de Theo"], desc = ["Conheça Lia, Bento, Iara e Theo.", "Colha 5 vegetais na fazenda.", "Entregue 3 cenouras para Theo."]; int[] counts = [System.Numerics.BitOperations.PopCount(s.met & 15), s.harvested, s.inventory[0]], targets = [4, 5, 3], reward = [40, 60, 75];
             for (int i = 0; i < 3; i++) { int y = 177 + i * 132; frame(new(308, y, 664, 112)); text(names[i], 326, y + 13, 23); text(desc[i], 326, y + 45, 18); DrawRectangle(326, y + 78, 400, 6, color_hex(0xb28d5c)); DrawRectangle(326, y + 78, 400 * Math.Min(1, (double)counts[i] / targets[i]), 6, color_hex(0x849958)); text($"{Math.Min(counts[i], targets[i])}/{targets[i]}  +{reward[i]} G", 746, y + 18, 17); bool done = (s.claimed & (1u << i)) != 0; if (done) text("Concluída", 794, y + 68, 18); else if (i == 2) text("Fale com Theo", 794, y + 68, 17); else if (button(g, new(790, y + 61, 160, 33), "Receber", counts[i] >= targets[i])) { if (claim_quest(s, i)) { game_save(g); game_toast(g, "Missão concluída!"); } } }
         }
@@ -113,35 +117,39 @@ public static class Ui
     {
         State s = g.s; int n = g.npc; frame(new(86, 396, 1108, 298)); frame(new(105, 413, 160, 178)); portrait(n, 118, 429, 2.9f); text(NPCS[n].name, 120, 605, 26); text(NPCS[n].role, 295, 415, 16, 0x927047); text(Social.Now(n, s).activity, 295, 438, 14, 0x927047);
         int letters = Math.Clamp((int)(Math.Max(0, g.dialog_age - .1f) * 55), 0, g.reply.Length); wrap(g.reply[..letters], 295, 468, 872, 21, 29);
-        string[] topics = ["Seu trabalho [Q]", "Algo pessoal [T]", "Como vai o dia? [Y]"]; int[] keys = [81, 84, 89];
-        for (int i = 0; i < 3; i++) if (button(g, new(298 + i * 293, 590, 284, 33), topics[i]) || (g.dialog_age > .2f && IsKeyPressed(keys[i]))) { g.reply = Social.Topic(s, n, i); g.dialog_age = 0; game_save(g); }
+        string[] topics = ["Seu trabalho [Q]", "Algo pessoal [T]", "Seu dia [Y]", "O caderno [U]"]; int[] keys = [81, 84, 89, 85];
+        for (int i = 0; i < 4; i++) if (button(g, new(298 + i * 219, 590, 211, 33), topics[i]) || (g.dialog_age > .2f && IsKeyPressed(keys[i]))) { g.reply = i == 3 ? Story.NpcLine(s, n) : Social.Topic(s, n, i); g.dialog_age = 0; game_save(g); }
 
-        if (n == 0 && button(g, new(298, 640, 270, 34), "Comprar e vender", g.s.scene == SHOP && g.npc_scene[0] == SHOP)) game_modal(g, D_SHOP);
-        if (n == 1 && button(g, new(298, 640, 270, 34), s.watering_level == 2 ? "Regador melhorado" : "Regador: 60 G + 8 madeiras", s.watering_level < 2)) { g.reply = upgrade_can(s) ? "Prontinho! Agora seu regador molha o canteiro escolhido e seus quatro vizinhos." : "Preciso de 8 madeiras e 60 moedas. Recolha os troncos pela fazenda e volte quando puder."; g.dialog_age = 0; game_save(g); }
-        if (n == 3 && (s.claimed & 4) == 0 && button(g, new(298, 640, 270, 34), "Entregar 3 cenouras", s.inventory[0] >= 3)) { claim_quest(s, 2); g.reply = "Perfeitas! Muito obrigado por ajudar na minha pesquisa. Aqui estão suas 75 moedas."; g.dialog_age = 0; game_save(g); }
-        if (n == 2) text("Sua vara está na tecla 9.", 298, 649, 17, 0x887045); if (n >= 4) text("Converse pelos assuntos acima.", 298, 649, 17, 0x887045);
-        if (button(g, new(585, 640, 245, 34), "Dar um presente", s.inventory.Any(x => x > 0) && s.gifted_day[n] != s.day)) { give_gift(s, n); g.reply = Social.GiftReply(n); g.dialog_age = 0; game_save(g); }
+        bool storyAction = Story.Current(s).ContactNpc == n && can_story_handoff(g);
+        if (storyAction && button(g, new(298, 640, 270, 34), "Continuar história")) { advance_story(g); return; }
+        if (!storyAction && n == 0 && button(g, new(298, 640, 270, 34), "Comprar e vender", g.s.scene == SHOP && g.npc_scene[0] == SHOP)) game_modal(g, D_SHOP);
+        if (!storyAction && n == 1 && button(g, new(298, 640, 270, 34), s.watering_level == 2 ? "Regador melhorado" : "Regador: 60 G + 8 madeiras", s.watering_level < 2)) { g.reply = upgrade_can(s) ? "Prontinho! Agora seu regador molha o canteiro escolhido e seus quatro vizinhos." : "Preciso de 8 madeiras e 60 moedas. Recolha os troncos pela fazenda e volte quando puder."; g.dialog_age = 0; game_save(g); }
+        if (!storyAction && n == 3 && (s.claimed & 4) == 0 && button(g, new(298, 640, 270, 34), "Entregar 3 cenouras", s.inventory[0] >= 3)) { claim_quest(s, 2); g.reply = "Perfeitas! Muito obrigado por ajudar na minha pesquisa. Aqui estão suas 75 moedas."; g.dialog_age = 0; game_save(g); }
+        if (!storyAction && n == 2) text("Sua vara está na tecla 9.", 298, 649, 17, 0x887045); if (!storyAction && n >= 4) text("Converse pelos assuntos acima.", 298, 649, 17, 0x887045);
+        if (button(g, new(585, 640, 245, 34), "Dar um presente", s.inventory.Any(x => x > 0) && s.gifted_day[n] != s.day)) { int crop = Array.FindIndex(s.inventory, count => count > 0); give_gift(s, n); g.reply = Social.GiftReply(s, n, crop); g.dialog_age = 0; game_save(g); }
         if (button(g, new(847, 640, 324, 34), "Até mais! [E]")) g.dialog = D_NONE;
         if (g.dialog_age > .2f && (IsKeyPressed(KEY_E) || IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE))) { if (letters < g.reply.Length) g.dialog_age = g.reply.Length / 55f + 1; else g.dialog = D_NONE; }
     }
     static void dialogs(Game g)
     {
         if (g.dialog == D_NONE) return; if (g.dialog != D_NPC) DrawRectangle(0, 0, UI_W, UI_H, new Color(20, 25, 18, 125));
+        if (g.dialog == D_TITLE) { draw_title(g); return; }
+        if (g.dialog == D_LETTER) { draw_letter(g); return; }
         if (g.dialog == D_MENU) { inventory(g); return; }
         if (g.dialog == D_NPC) { dialogue(g); return; }
-        if (g.dialog == D_PAUSE) { frame(new(450, 152, 380, 410)); text("Vale do Sol", 510, 190, 39); if (button(g, new(490, 270, 300, 50), "Continuar")) g.dialog = D_NONE; if (button(g, new(490, 340, 300, 50), "Controles")) game_modal(g, D_HELP); if (button(g, new(490, 410, 300, 50), "Salvar e sair")) { game_save(g); g.quit = true; } text("Esc para voltar", 561, 507, 17); }
+        if (g.dialog == D_PAUSE) { frame(new(450, 122, 380, 480)); text("Vale do Sol", 510, 157, 39); if (button(g, new(490, 225, 300, 50), "Continuar")) g.dialog = D_NONE; if (button(g, new(490, 290, 300, 50), "Controles")) game_modal(g, D_HELP); if (button(g, new(490, 355, 300, 50), g.s.sharp_pixels ? "Imagem: nítida" : "Imagem: preencher")) { g.s.sharp_pixels = !g.s.sharp_pixels; game_save(g); } if (button(g, new(490, 420, 300, 50), "Salvar e sair")) { game_save(g); g.quit = true; } text("Esc para voltar", 561, 548, 17); }
         else if (g.dialog == D_HELP) { frame(new(273, 60, 734, 594)); text("Como viver no vale", 315, 91, 32); string[] keys = ["WASD / setas", "Shift", "1-5 / 6-8 / 9", "Clique / Espaço", "Botão direito", "E / F", "I / J / R", "F5 / F11"], actions = ["Caminhar", "Correr", "Ferramentas / sementes / vara", "Usar a ferramenta perto de você", "Caminhar até um ponto", "Interagir / pescar", "Mochila / diário / moradores", "Salvar / tela cheia"]; for (int i = 0; i < keys.Length; i++) { text(keys[i], 315, 153 + i * 39, 19, 0x927047); text(actions[i], 552, 153 + i * 39, 19); } wrap("Prepare, plante, regue e durma na cama da sua casa. Visite a vila pelo caminho à direita da fazenda. Entre no armazém e converse com Lia para vender a colheita.", 315, 483, 645, 19, 28); if (button(g, new(450, 594, 380, 38), "Voltar ao jogo")) g.dialog = D_NONE; }
         else if (g.dialog == D_REST) { frame(new(380, 245, 520, 230)); text("Dormir por hoje?", 421, 276, 32); wrap("As plantas regadas vão crescer e sua energia será recuperada. Amanhã é um novo começo.", 421, 330, 435, 19, 27); if (button(g, new(415, 417, 210, 38), "Ainda não")) g.dialog = D_NONE; if (button(g, new(645, 417, 220, 38), "Sim, boa noite")) game_rest(g); }
         else if (g.dialog == D_SHOP)
         {
             frame(new(330, 81, 620, 558)); text("Armazém da Lia", 372, 113, 32); text($"Suas moedas: {g.s.coins} G", 680, 124, 18); for (int i = 0; i < 3; i++) { int y = 184 + i * 102; frame(new(360, y, 560, 87)); crop_icon(i, 378, y + 21); text(CROPS[i].name, 434, y + 12, 24); text($"{CROPS[i].days} dias | {g.s.seeds[i]} sementes na mochila", 434, y + 49, 17); if (button(g, new(753, y + 22, 145, 40), $"5 por {CROPS[i].price} G", g.s.coins >= CROPS[i].price)) { buy_seeds(g.s, i); game_save(g); } }
-            if (button(g, new(361, 516, 559, 42), "Vender colheita e peixes")) { int value = sell_all(g.s); game_save(g); game_toast(g, $"Colheita vendida! +{value} moedas."); }
+            if (button(g, new(361, 516, 559, 42), "Vender colheita e peixes")) { int value = sell_all(g.s); game_save(g); game_toast(g, value < 0 ? "Gaste algumas moedas antes de vender. Sua colheita foi preservada." : value == 0 ? "Sua mochila ainda não tem colheitas ou peixes para vender." : $"Colheita vendida! +{value} moedas."); }
             if (button(g, new(361, 580, 559, 36), "Até a próxima, Lia!")) g.dialog = D_NONE;
         }
     }
     public static void game_draw(Game g)
     {
-        SetMouseCursor(MOUSE_CURSOR_DEFAULT); ClearBackground(color_hex(0x20291a)); Camera2D camera = new() { offset = new(UI_W / 2, UI_H / 2), target = g.camera, rotation = 0, zoom = CAMERA_ZOOM }; BeginMode2D(camera); Ray.SmoothText = false; world_draw(g); Ray.SmoothText = true; EndMode2D(); hud(g); dialogs(g);
+        SetMouseCursor(MOUSE_CURSOR_DEFAULT); ClearBackground(color_hex(0x20291a)); Camera2D camera = new() { offset = new(UI_W / 2, UI_H / 2), target = render_camera(g), rotation = 0, zoom = CAMERA_ZOOM }; BeginMode2D(camera); Ray.SmoothText = false; world_draw(g); Ray.SmoothText = true; EndMode2D(); if (g.dialog != D_TITLE) hud(g); dialogs(g);
         if (g.fade_timer > 0) DrawRectangle(0, 0, UI_W, UI_H, new Color(15, 19, 12, (int)(255 * g.fade_timer / .3f)));
     }
 }

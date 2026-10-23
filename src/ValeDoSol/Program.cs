@@ -3,12 +3,29 @@ using static ValeDoSol.World;
 using static ValeDoSol.GameLogic;
 namespace ValeDoSol;
 
+/// <summary>Keep simulation speed independent of drawing speed, with bounded work after a stall.</summary>
+public sealed class FixedStepClock
+{
+    public const double Step = 1.0 / 60;
+    public const int MaxSteps = 30;
+    double accumulator;
+
+    public int Advance(double frameTime)
+    {
+        if (!double.IsFinite(frameTime) || frameTime < 0) frameTime = 0;
+        accumulator = Math.Min(accumulator + frameTime, Step * MaxSteps);
+        int steps = Math.Min(MaxSteps, (int)Math.Floor((accumulator + 1e-10) / Step));
+        accumulator = Math.Max(0, accumulator - steps * Step);
+        return steps;
+    }
+}
+
 public static class Program
 {
     public static int Main(string[] args)
     {
         if (args.Contains("--licenses")) { foreach (string resource in new[] { "ValeDoSol.License.txt", "ValeDoSol.RaylibLicense.txt", "ValeDoSol.FontLicense.txt", "ValeDoSol.LpcCredits.txt", "ValeDoSol.LpcLicense.txt" }) { using var stream = typeof(Program).Assembly.GetManifestResourceStream(resource); if (stream != null) { using StreamReader reader = new(stream); Console.WriteLine(reader.ReadToEnd()); } } return 0; }
-        if (args.Contains("--version")) { Console.WriteLine("Vale do Sol 6.0.0 | C# + .NET 10 + raylib 6.2 | Linux x86_64"); return 0; }
+        if (args.Contains("--version")) { Console.WriteLine("Vale do Sol 7.0.0 | C# + .NET 10 + raylib 6.2 | Linux x86_64"); return 0; }
         if (args.Contains("--self-test")) return SelfTests.Run();
         if (args.Contains("--help")) { Console.WriteLine("Vale do Sol - C#\n--version\n--save-dir DIRETORIO\n--smoke (fecha após 60 quadros)\n--screenshot ARQUIVO.png\n--village (somente com --smoke)"); return 0; }
         bool smoke = false, village = false, home = false, shop = false; string? screenshot = null, dir = null, exportArt = null; Scene? preview = null;
@@ -28,20 +45,31 @@ public static class Program
         dir ??= Path.Combine(string.IsNullOrEmpty(xdg) ? Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile), ".local", "share") : xdg, "vale-do-sol-csharp");
         Game game = new() { ignore_focus = smoke }; game_init(game, dir); if (smoke && village) game_scene(game, Logic.VILLAGE, new(416, 320)); if (smoke && home) game_scene(game, Logic.HOME, new(320, 280)); if (smoke && shop) game_scene(game, Logic.SHOP, new(352, 280));
         if (smoke && preview is Scene selected) game_scene(game, selected, Physics.Nearest(selected, Map.Indoors(selected) ? Map.Arrival(selected) : new(416, 320)));
+        if (!smoke) game_modal(game, Dialog.D_TITLE);
         if (string.IsNullOrEmpty(Environment.GetEnvironmentVariable("DISPLAY")) && string.IsNullOrEmpty(Environment.GetEnvironmentVariable("WAYLAND_DISPLAY"))) { Console.Error.WriteLine("Abra o jogo em uma sessão gráfica Linux. Para testar sem janela, use --self-test."); return 1; }
         SetTraceLogLevel(LOG_WARNING); SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT); InitWindow(1280, 720, "Vale do Sol"); if (!IsWindowReady()) return 1; SetWindowMinSize(960, 540); SetExitKey(KEY_NULL); SetTargetFPS(60);
         Image icon = GenImageColor(64, 64, color_hex(0x2a4638)); ImageDrawRectangle(ref icon, 28, 28, 7, 29, color_hex(0x9eaf72)); ImageDrawRectangle(ref icon, 16, 37, 17, 6, color_hex(0xc4cd8b)); ImageDrawRectangle(ref icon, 32, 31, 17, 6, color_hex(0xa9bd7c)); ImageDrawRectangle(ref icon, 21, 9, 23, 23, color_hex(0xeed18b)); ImageDrawRectangle(ref icon, 27, 15, 11, 11, color_hex(0xb88a51)); SetWindowIcon(icon); UnloadImage(icon);
         LoadUiFont(); Art.Init(); Scenery.Init(); if (exportArt != null && !Art.Export(exportArt)) { Console.Error.WriteLine("Não foi possível exportar a arte."); Scenery.Unload(); Art.Unload(); UnloadUiFont(); CloseWindow(); return 1; }
         RenderTexture target = LoadRenderTexture(UI_W, UI_H); if (!IsRenderTextureValid(target)) { CloseWindow(); return 1; }
         SetTextureFilter(target.texture, TEXTURE_FILTER_POINT);
-        int frames = 0;
+        int frames = 0; FixedStepClock clock = new();
         try
         {
             while (!WindowShouldClose() && !game.quit)
             {
-                float scale = Math.Min((float)GetScreenWidth() / UI_W, (float)GetScreenHeight() / UI_H), ox = (GetScreenWidth() - UI_W * scale) / 2, oy = (GetScreenHeight() - UI_H * scale) / 2; Point raw = GetMousePosition(), mouse = new((raw.x - ox) / scale, (raw.y - oy) / scale); float dt = Math.Min(GetFrameTime(), .05f);
-                game_update(game, dt, mouse); BeginTextureMode(target); Ui.game_draw(game); EndTextureMode();
-                BeginDrawing(); ClearBackground(color_hex(0x1e3027)); DrawTexturePro(target.texture, new(0, 0, UI_W, -UI_H), new(ox, oy, UI_W * scale, UI_H * scale), new(0, 0), 0, WHITE); EndDrawing();
+                Viewport viewport = Viewport.Fit(GetScreenWidth(), GetScreenHeight(), game.s.sharp_pixels);
+                Point mouse = viewport.ToLogical(GetMousePosition());
+                int steps = clock.Advance(GetFrameTime());
+                if (steps == 0)
+                {
+                    // Short frames still receive clicks immediately without advancing game time.
+                    bool wasMoving = game.moving;
+                    game_update(game, 0, mouse, true);
+                    game.moving = game.dialog == Dialog.D_NONE && wasMoving;
+                }
+                else for (int step = 0; step < steps; step++) game_update(game, (float)FixedStepClock.Step, mouse, step == 0);
+                BeginTextureMode(target); Ui.game_draw(game); EndTextureMode();
+                BeginDrawing(); ClearBackground(color_hex(0x1e3027)); DrawTexturePro(target.texture, new(0, 0, UI_W, -UI_H), viewport.Bounds, new(0, 0), 0, WHITE); EndDrawing();
                 if (smoke && ++frames >= 60) { if (screenshot != null) TakeScreenshot(screenshot); break; }
             }
         }

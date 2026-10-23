@@ -6,7 +6,7 @@ public struct Plot { public bool tilled, watered; public int crop, growth; }
 public enum Scene { FARM, VILLAGE, HOME, SHOP, WORKSHOP, BAKERY, LIBRARY, GREENHOUSE, COTTAGE }
 public class State
 {
-    public int edition = 6;
+    public int edition = 7;
     [JsonRequired] public int version = 3, day = 1, minute = 480, coins = 120, energy = 100, max_energy = 100;
     [JsonRequired] public int[] seeds = [10, 5, 0], inventory = [0, 0, 0];
     public int wood, stone, fish, harvested, selected, watering_level = 1;
@@ -19,6 +19,11 @@ public class State
     public Scene[] npc_scenes = Enumerable.Repeat(Scene.VILLAGE, Social.Count).ToArray();
     public int npc_day = 1;
     public bool npc_saved;
+    public int story_stage, story_day;
+    public uint story_flags;
+    public bool sharp_pixels = true;
+    public int[] npc_last_line = Enumerable.Repeat(-1, Social.Count).ToArray();
+    public int[] npc_last_topic = Enumerable.Repeat(-1, Social.Count).ToArray();
     public uint met, claimed, gathered, tutorial, rng = 4871;
     public bool rod;
 }
@@ -47,8 +52,9 @@ public static class Logic
     static bool In(int n, int min, int max) => n >= min && n <= max;
     public static bool state_valid(State? s)
     {
-        if (s is null || s.version != 3 || s.edition != 6 || !In(s.day, 1, 100000) || !In(s.minute, 360, 1440) || !In(s.coins, 0, 1_000_000_000) || !In(s.max_energy, 100, 200) || !In(s.energy, 0, s.max_energy) || !Enum.IsDefined(s.scene)) return false;
+        if (s is null || s.version != 3 || s.edition != 7 || !In(s.day, 1, 100000) || !In(s.minute, 360, 1440) || !In(s.coins, 0, 1_000_000_000) || !In(s.max_energy, 100, 200) || !In(s.energy, 0, s.max_energy) || !Enum.IsDefined(s.scene)) return false;
         if (!float.IsFinite(s.player.x) || !float.IsFinite(s.player.y) || s.player.x < 16 || s.player.x > world_size(s.scene).x - 16 || s.player.y < 32 || s.player.y > world_size(s.scene).y - 24) return false;
+        if (!Story.IsValid(s) || s.npc_last_line?.Length != Social.Count || s.npc_last_topic?.Length != Social.Count || s.npc_last_line.Any(n => !In(n, -1, 9999)) || s.npc_last_topic.Any(n => !In(n, -1, 9999))) return false;
         if (s.npc_positions?.Length != Social.Count || s.npc_scenes?.Length != Social.Count || s.npc_day < 1 || s.npc_day > s.day) return false;
         if (s.npc_saved && s.npc_positions.Where((p, i) => !Enum.IsDefined(s.npc_scenes[i]) || !float.IsFinite(p.x) || !float.IsFinite(p.y) || p.x < 12 || p.y < 12 || p.x > Map.Size(s.npc_scenes[i]).x || p.y > Map.Size(s.npc_scenes[i]).y).Any()) return false;
         if (s.seeds?.Length != 3 || s.inventory?.Length != 3 || s.plots?.Length != 48 || s.friendship?.Length != Social.Count || s.talked_day?.Length != Social.Count || s.gifted_day?.Length != Social.Count || s.conversations?.Length != Social.Count) return false;
@@ -63,7 +69,29 @@ public static class Logic
     }
     public static bool state_load(out State result, string path)
     {
-        result = new(); try { if (new FileInfo(path).Length > 200000) return false; string raw = File.ReadAllText(path); var s = JsonSerializer.Deserialize(raw, SaveContext.Default.State); using var meta = JsonDocument.Parse(raw); if (s is not null && !meta.RootElement.TryGetProperty("edition", out _)) s.edition = 3; if (s is not null && s.edition is 3 or 4 && s.friendship?.Length == 4 && s.talked_day?.Length == 4 && s.gifted_day?.Length == 4) { Array.Resize(ref s.friendship, Social.Count); Array.Resize(ref s.talked_day, Social.Count); Array.Resize(ref s.gifted_day, Social.Count); s.conversations = new int[Social.Count]; s.edition = 6; } if (s is not null && s.edition is >= 3 and <= 6) s.edition = 6; if (!state_valid(s)) return false; result = s!; return true; } catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException or NotSupportedException) { return false; }
+        result = new();
+        try
+        {
+            if (new FileInfo(path).Length > 200000) return false;
+            string raw = File.ReadAllText(path);
+            var s = JsonSerializer.Deserialize(raw, SaveContext.Default.State);
+            using var meta = JsonDocument.Parse(raw);
+            if (s is null) return false;
+            if (!meta.RootElement.TryGetProperty("edition", out _)) s.edition = 3;
+            if (s.edition is < 3 or > 7) return false;
+            if (s.edition is 3 or 4 && s.friendship?.Length == 4 && s.talked_day?.Length == 4 && s.gifted_day?.Length == 4)
+            {
+                Array.Resize(ref s.friendship, Social.Count);
+                Array.Resize(ref s.talked_day, Social.Count);
+                Array.Resize(ref s.gifted_day, Social.Count);
+                s.conversations = new int[Social.Count];
+            }
+            s.edition = 7;
+            if (!state_valid(s)) return false;
+            result = s;
+            return true;
+        }
+        catch (Exception e) when (e is IOException or JsonException or UnauthorizedAccessException or NotSupportedException) { return false; }
     }
     public static bool raining(State s) => s.day % 4 == 0;
     public static int next_day(State s) { int grown = 0; foreach (ref Plot p in s.plots.AsSpan()) { if (p.crop >= 0 && (p.watered || raining(s))) { p.growth = Math.Min(CROPS[p.crop].days, p.growth + 1); grown++; } p.watered = false; } s.day = Math.Min(100000, s.day + 1); s.minute = 480; s.energy = s.max_energy; s.gathered = 0; if (raining(s)) foreach (ref Plot p in s.plots.AsSpan()) if (p.tilled) p.watered = true; return grown; }
