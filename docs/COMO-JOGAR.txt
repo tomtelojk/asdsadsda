@@ -1,4 +1,4 @@
-VALE DO SOL 7.0 — O CADERNO DAS ESTAÇÕES
+VALE DO SOL 8.0 — A VILA FLORESCE
 C# / .NET / raylib — Linux x86_64
 
 ABRIR
@@ -7,42 +7,50 @@ Ou: chmod +x ValeDoSol && ./ValeDoSol
 O runtime .NET está incluído. Não precisa de SDK ou FUSE.
 Requer glibc 2.38+, X11/XWayland e OpenGL 3.3 (ex.: Ubuntu 24.04).
 
-A HISTÓRIA
-Aurora deixou para seu neto uma fazenda, uma carta e um caderno incompleto.
-Conheça os oito moradores e ajude a recuperar a antiga horta comunitária.
-J abre o diário: veja o capítulo, os requisitos, a recompensa e o contato.
-Conclua as entregas perto do morador indicado. A história tem seis capítulos,
-sem prazo para terminar. A vida na fazenda continua depois do desfecho.
-A carta pode ser relida no diário. Pergunte sobre O caderno [U] nas conversas.
-Para o último encontro, volte à vila entre 17h e 21h em um dia posterior aos
-preparativos, após alcançar dois corações com todos os moradores.
-
 EXPLORAR
 WASD / setas: caminhar. Shift: correr.
 Siga a estrada à direita até o limite da fazenda para chegar à vila.
 Volte pela saída à esquerda da vila.
 Botão direito do mouse: caminhar até um ponto acessível.
+M: consultar o mapa. Alterne entre Fazenda e Vila e encontre os lugares.
+Pontos coloridos indicam moradores na área; passe o mouse para ver os nomes.
+
+A NOVA HORTA
+A horta fica ao sul da estrada principal da fazenda, seguindo o caminho.
+São oito canteiros elevados com 48 parcelas, separados por corredores.
+Entre pelos quatro portões. Cercas e canteiros têm colisão.
+Caminhe pelos corredores para cuidar das plantas pela lateral.
+O cultivo dos saves anteriores continua nas mesmas 48 parcelas, agora no novo local.
 
 CULTIVAR
 1: enxada; 2: sementes; 3: regador; 4: cesta; 5: explorar.
 6, 7, 8: sementes de cenoura, nabo e morango; 9: vara de pesca.
-Aproxime-se do canteiro e clique para usar a ferramenta.
+Aproxime-se do canteiro pela passagem e clique para usar a ferramenta.
 Espaço usa a ferramenta no canteiro à frente do personagem.
 As ferramentas só funcionam perto do personagem.
 Regue as plantas e durma para elas crescerem. A chuva rega por você.
 Colha com a cesta e venda para Lia. As três culturas crescem em todas as estações.
 
+PREFEITURA E QUADRO DA VILA
+A prefeitura fica ao sudeste da praça, junto ao caminho para o lago.
+Entre para conhecer o atendimento, os arquivos e a mesa de reunião.
+Otávio organiza registros em algumas manhãs da semana; Dora e Ceci fazem visitas.
+E perto do quadro externo ou do painel da prefeitura abre os avisos.
+O quadro tem três abas: Avisos, Mapa do vale e Moradores agora.
+Consulte a localização atual dos vizinhos e os próximos passos do caderno.
+Bancos, floreiras, lampiões, poço e outros objetos têm bases físicas.
+
 CASAS E COMÉRCIO
 Aproxime-se de uma porta e aperte E para entrar.
-Sua casa, armazém, oficina, padaria, biblioteca, casa das flores e casa do lago
-possuem interiores. Examine os móveis com E para conhecer suas histórias.
+Sua casa, armazém, oficina, padaria, biblioteca, casa das flores, casa do lago
+e prefeitura possuem interiores. Examine os móveis com E.
 Ao lado da cama da sua casa, aperte E para dormir.
 Para sair, caminhe pela porta na parte de baixo da sala.
 No armazém, vá até a frente do balcão e aperte E para falar com Lia.
 Escolha Comprar e vender para abrir o comércio.
 Lia atende das 8h às 17h em dias úteis; nos fins de semana, até 13h.
 
-VILA
+MORADORES
 E perto dos moradores: conversar. E perto de troncos/pedras: recolher.
 Lia vende sementes e compra colheitas e peixes.
 Bento melhora o regador por 60 moedas e 8 madeiras.
@@ -57,8 +65,18 @@ Q, T, Y e U durante uma conversa: trabalho, histórias pessoais, dia e caderno.
 Também pode escolher os assuntos com o mouse.
 E em um diálogo revela o restante do texto e depois encerra a conversa.
 
+A HISTÓRIA
+Aurora deixou para seu neto uma fazenda, uma carta e um caderno incompleto.
+Conheça os oito moradores e ajude a recuperar a antiga horta comunitária.
+J abre o diário: veja o capítulo, os requisitos, a recompensa e o contato.
+Conclua as entregas perto do morador indicado. A história tem seis capítulos,
+sem prazo para terminar. A vida na fazenda continua depois do desfecho.
+A carta pode ser relida no diário. Pergunte sobre O caderno [U] nas conversas.
+Para o último encontro, volte à vila entre 17h e 21h em um dia posterior aos
+preparativos, após alcançar dois corações com todos os moradores.
+
 MENUS E IMAGEM
-I / Tab: mochila. J: diário. R: moradores.
+I / Tab: mochila. J: diário. R: moradores. M: mapa.
 H: controles. Escape: fechar menu ou abrir a pausa.
 F5: salvar. F11: tela cheia.
 O relógio para durante menus/diálogos e quando o jogo perde foco.
@@ -71,8 +89,9 @@ SAVES
 Pasta padrão: ~/.local/share/vale-do-sol-csharp/
 Ou $XDG_DATA_HOME/vale-do-sol-csharp/ quando configurado.
 Save principal: save.json. A mochila oferece Criar backup/Restaurar backup.
-Saves C# das edições 3 a 6 continuam funcionando. Na primeira atualização,
-o original é guardado em save-before-v7.json.
+Saves C# das edições 3 a 7 continuam funcionando. Na primeira atualização,
+o original é guardado em save-before-v8.json.
+Plantas, crescimento, recursos, amizades e a campanha existente são preservados.
 Para outra partida: ./ValeDoSol --save-dir /caminho/para/a/partida
 
 O jogo segue em desenvolvimento. Ainda não há casamento, multiplayer ou música.
@@ -80,6 +99,7 @@ As referências a canções nas conversas fazem parte da história de Ceci.
 Projeto: https://github.com/tomtelojk/asdsadsda
 
 ARTE E CRÉDITOS
+Novos retratos gerados para este projeto; arquivos e avisos em Resources/Characters.
 Cenários: Lanea Zimmerman (Sharm), Liberated Pixel Cup, CC BY-SA 3.0.
 Consulte LPC-art-and-license no pacote ou execute ./ValeDoSol --licenses.
-Código e personagens originais: MIT.
+Código e pixel art original dos personagens: MIT.

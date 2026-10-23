@@ -19,7 +19,7 @@ public static class Social
             0 => [A(360, Scene.SHOP, 352, 192, "Arrumando os produtos"), A(480, Scene.SHOP, 352, 200, "Atendendo no armazém"), A(weekend ? 780 : 1020, Scene.VILLAGE, 400, 448, "Tomando café com Dora"), A(1080, Scene.LIBRARY, 432, 240, "Visitando Otávio"), A(1170, Scene.SHOP, 512, 336, "Conferindo o estoque")],
             1 => [A(360, Scene.WORKSHOP, 352, 288, "Preparando as ferramentas"), A(480, Scene.WORKSHOP, 192, 224, "Trabalhando no barco da Iara"), A(500, Scene.VILLAGE, 848, 336, "Buscando madeira na varanda"), A(560, Scene.FARM, 336, 400, "Visitando o novo fazendeiro"), A(690, Scene.BAKERY, 224, 336, "Buscando o almoço da Dora"), A(800, Scene.WORKSHOP, 496, 224, "Construindo o palco da Ceci"), A(1030, Scene.VILLAGE, 656, 576, "Encontrando Ceci na praça"), A(1180, Scene.WORKSHOP, 352, 320, "Guardando as ferramentas")],
             2 => [A(360, Scene.COTTAGE, 448, 272, "Separando as iscas"), A(450, Scene.VILLAGE, 880, 688, "Procurando peixes na margem sul"), A(530, Scene.VILLAGE, 784, 496, "Pescando no cais"), A(650, Scene.VILLAGE, 1040, 688, "Trocando o ponto de pesca"), A(760, Scene.BAKERY, 432, 320, "Almoçando com Dora"), A(890, Scene.VILLAGE, 1360, 1120, "Explorando o lago do bosque"), A(1080, Scene.VILLAGE, 400, 592, "Contando histórias para Ceci"), A(1200, Scene.COTTAGE, 480, 256, "Limpando a vara de pesca")],
-            3 => [A(360, Scene.GREENHOUSE, 352, 256, "Organizando o caderno"), A(480, Scene.GREENHOUSE, 208, 224, "Estudando as sementes"), A(505, Scene.VILLAGE, 688, 272, "Examinando as mudas de Miguel"), A(600, Scene.FARM, 864, 448, "Observando a horta da fazenda"), A(770, Scene.VILLAGE, 464, 592, "Comparando notas no jardim"), A(880, Scene.LIBRARY, 384, 240, "Pesquisando os mapas antigos"), A(1040, Scene.VILLAGE, 1200, 816, "Catalogando flores do bosque"), A(1160, Scene.GREENHOUSE, 400, 256, "Guardando as amostras")],
+            3 => [A(360, Scene.GREENHOUSE, 352, 256, "Organizando o caderno"), A(480, Scene.GREENHOUSE, 208, 224, "Estudando as sementes"), A(505, Scene.VILLAGE, 688, 272, "Examinando as mudas de Miguel"), A(600, Scene.FARM, 688, 656, "Observando a horta da fazenda"), A(770, Scene.VILLAGE, 464, 592, "Comparando notas no jardim"), A(880, Scene.LIBRARY, 384, 240, "Pesquisando os mapas antigos"), A(1040, Scene.VILLAGE, 1200, 816, "Catalogando flores do bosque"), A(1160, Scene.GREENHOUSE, 400, 256, "Guardando as amostras")],
             4 => [A(360, Scene.BAKERY, 224, 192, "Assando os primeiros pães"), A(480, Scene.BAKERY, 400, 176, "Tirando uma fornada do forno"), A(492, Scene.VILLAGE, 1168, 336, "Abrindo a banca de pães"), A(590, Scene.SHOP, 512, 304, "Entregando broas para Lia"), A(720, Scene.VILLAGE, 416, 448, "Dividindo o almoço na praça"), A(850, Scene.BAKERY, 352, 304, "Preparando massa e biscoitos"), A(1035, Scene.LIBRARY, 480, 240, "Levando chá para Otávio"), A(1150, Scene.BAKERY, 224, 272, "Fechando a cozinha")],
             5 => [A(360, Scene.GREENHOUSE, 512, 240, "Preparando as ervas"), A(465, Scene.VILLAGE, 720, 272, "Regando a horta de ervas"), A(550, Scene.VILLAGE, 432, 688, "Colhendo folhas no jardim"), A(690, Scene.COTTAGE, 352, 272, "Levando chá para Iara"), A(840, Scene.GREENHOUSE, 448, 256, "Separando mudas e etiquetas"), A(950, Scene.VILLAGE, 736, 720, "Cuidando das flores da margem"), A(1090, Scene.VILLAGE, 656, 592, "Descansando no banco da praça"), A(1190, Scene.GREENHOUSE, 352, 320, "Preparando chá para amanhã")],
             6 => [A(360, Scene.COTTAGE, 352, 256, "Escrevendo uma melodia"), A(470, Scene.VILLAGE, 464, 432, "Escutando a vila acordar"), A(515, Scene.VILLAGE, 656, 592, "Ensaiando na praça"), A(650, Scene.WORKSHOP, 352, 288, "Planejando o palco com Bento"), A(780, Scene.VILLAGE, 1120, 336, "Visitando a banca da Dora"), A(920, Scene.VILLAGE, 400, 592, "Compondo à sombra das árvores"), A(1070, Scene.VILLAGE, 672, 576, "Tocando para os vizinhos"), A(1200, Scene.COTTAGE, 480, 272, "Guardando as partituras")],
@@ -33,7 +33,7 @@ public static class Social
                 case 2: plan[2] = A(530, Scene.FARM, 816, 496, "Pescando perto da fazenda"); break;
                 case 3: plan[2] = A(505, Scene.GREENHOUSE, 400, 240, "Recebendo visitas para trocar sementes"); break;
                 case 4: plan[3] = A(590, Scene.VILLAGE, 1136, 336, "Dividindo broas na feira"); break;
-                case 5: plan[2] = A(550, Scene.FARM, 864, 448, "Visitando a horta da fazenda"); break;
+                case 5: plan[2] = A(550, Scene.FARM, 688, 656, "Visitando a horta da fazenda"); break;
                 case 6: plan[2] = A(515, Scene.BAKERY, 224, 336, "Buscando café antes do ensaio"); plan[4] = A(780, Scene.VILLAGE, 688, 592, "Preparando o encontro da praça"); break;
                 case 7: plan[2] = A(540, Scene.VILLAGE, 432, 592, "Lendo um poema para os vizinhos"); plan[4] = A(820, Scene.FARM, 336, 400, "Conferindo o velho caminho do pomar"); break;
             }
@@ -48,6 +48,13 @@ public static class Social
             if (npc == 5 && weekday is 0 or 3) plan[3] = A(690, Scene.LIBRARY, 432, 240, "Levando chá e buscando um livro de ervas");
             if (npc == 6 && weekday == 1) plan[3] = A(650, Scene.LIBRARY, 432, 272, "Escolhendo um poema com Otávio");
             if (npc == 7 && weekday == 4) plan[3] = A(675, Scene.BAKERY, 224, 336, "Anotando uma receita antiga da Dora");
+        }
+        if (!weekend)
+        {
+            int weekday = (s.day - 1) % 7;
+            if (npc == 7 && weekday is 0 or 2 or 4) plan[2] = A(540, Scene.TOWNHALL, 352, 240, "Organizando os registros da prefeitura");
+            if (npc == 4 && weekday == 0) plan[6] = A(1035, Scene.TOWNHALL, 256, 320, "Levando pão para o conselho da vila");
+            if (npc == 6 && weekday == 1) plan[3] = A(650, Scene.TOWNHALL, 432, 272, "Preparando o encontro cultural da vila");
         }
         if (raining(s) && npc != 0)
         {

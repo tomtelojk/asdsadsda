@@ -3,10 +3,10 @@ using System.Text.Json.Serialization;
 namespace ValeDoSol;
 
 public struct Plot { public bool tilled, watered; public int crop, growth; }
-public enum Scene { FARM, VILLAGE, HOME, SHOP, WORKSHOP, BAKERY, LIBRARY, GREENHOUSE, COTTAGE }
+public enum Scene { FARM, VILLAGE, HOME, SHOP, WORKSHOP, BAKERY, LIBRARY, GREENHOUSE, COTTAGE, TOWNHALL }
 public class State
 {
-    public int edition = 7;
+    public int edition = 8;
     [JsonRequired] public int version = 3, day = 1, minute = 480, coins = 120, energy = 100, max_energy = 100;
     [JsonRequired] public int[] seeds = [10, 5, 0], inventory = [0, 0, 0];
     public int wood, stone, fish, harvested, selected, watering_level = 1;
@@ -52,7 +52,7 @@ public static class Logic
     static bool In(int n, int min, int max) => n >= min && n <= max;
     public static bool state_valid(State? s)
     {
-        if (s is null || s.version != 3 || s.edition != 7 || !In(s.day, 1, 100000) || !In(s.minute, 360, 1440) || !In(s.coins, 0, 1_000_000_000) || !In(s.max_energy, 100, 200) || !In(s.energy, 0, s.max_energy) || !Enum.IsDefined(s.scene)) return false;
+        if (s is null || s.version != 3 || s.edition != 8 || !In(s.day, 1, 100000) || !In(s.minute, 360, 1440) || !In(s.coins, 0, 1_000_000_000) || !In(s.max_energy, 100, 200) || !In(s.energy, 0, s.max_energy) || !Enum.IsDefined(s.scene)) return false;
         if (!float.IsFinite(s.player.x) || !float.IsFinite(s.player.y) || s.player.x < 16 || s.player.x > world_size(s.scene).x - 16 || s.player.y < 32 || s.player.y > world_size(s.scene).y - 24) return false;
         if (!Story.IsValid(s) || s.npc_last_line?.Length != Social.Count || s.npc_last_topic?.Length != Social.Count || s.npc_last_line.Any(n => !In(n, -1, 9999)) || s.npc_last_topic.Any(n => !In(n, -1, 9999))) return false;
         if (s.npc_positions?.Length != Social.Count || s.npc_scenes?.Length != Social.Count || s.npc_day < 1 || s.npc_day > s.day) return false;
@@ -78,7 +78,7 @@ public static class Logic
             using var meta = JsonDocument.Parse(raw);
             if (s is null) return false;
             if (!meta.RootElement.TryGetProperty("edition", out _)) s.edition = 3;
-            if (s.edition is < 3 or > 7) return false;
+            if (s.edition is < 3 or > 8) return false;
             if (s.edition is 3 or 4 && s.friendship?.Length == 4 && s.talked_day?.Length == 4 && s.gifted_day?.Length == 4)
             {
                 Array.Resize(ref s.friendship, Social.Count);
@@ -86,7 +86,7 @@ public static class Logic
                 Array.Resize(ref s.gifted_day, Social.Count);
                 s.conversations = new int[Social.Count];
             }
-            s.edition = 7;
+            s.edition = 8;
             if (!state_valid(s)) return false;
             result = s;
             return true;
@@ -115,8 +115,8 @@ public static class Logic
     public static bool upgrade_can(State s) { if (s.watering_level == 2 || s.wood < 8 || s.coins < 60) return false; s.wood -= 8; s.coins -= 60; s.watering_level = 2; return true; }
     public static bool claim_quest(State s, int q) { if (!In(q, 0, 2) || (s.claimed & (1u << q)) != 0) return false; int reward = new[] { 40, 60, 75 }[q]; if ((q == 0 && (s.met & 15) != 15) || (q == 1 && s.harvested < 5) || (q == 2 && s.inventory[0] < 3) || s.coins > 1000000000 - reward) return false; if (q == 2) s.inventory[0] -= 3; s.claimed |= 1u << q; s.coins += reward; return true; }
     public static float random_unit(State s) { s.rng = (uint)((ulong)s.rng * 16807u % 2147483647u); return (s.rng - 1) / 2147483646f; }
-    public static Point plot_position(int i) => new(544 + i % 8 * 32, 256 + i / 8 * 32);
-    public static int plot_at(float x, float y) { int c = (int)MathF.Floor(x / 32) - 17, r = (int)MathF.Floor(y / 32) - 8; return c >= 0 && c < 8 && r >= 0 && r < 6 ? r * 8 + c : -1; }
+    public static Point plot_position(int i) => Garden.PlotPosition(i);
+    public static int plot_at(float x, float y) => Garden.PlotAt(x, y);
 
     public static Point world_size(Scene scene) => Map.Size(scene);
     public static Rectangle[] water_bodies(Scene scene) => scene is FARM or VILLAGE ? [new((scene == FARM ? 26 : 25) * 32, 512, (scene == FARM ? 6 : 7) * 32, 128), new(1408, 1088, 384, 192)] : [];

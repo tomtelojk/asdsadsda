@@ -24,8 +24,8 @@ public static class Program
 {
     public static int Main(string[] args)
     {
-        if (args.Contains("--licenses")) { foreach (string resource in new[] { "ValeDoSol.License.txt", "ValeDoSol.RaylibLicense.txt", "ValeDoSol.FontLicense.txt", "ValeDoSol.LpcCredits.txt", "ValeDoSol.LpcLicense.txt" }) { using var stream = typeof(Program).Assembly.GetManifestResourceStream(resource); if (stream != null) { using StreamReader reader = new(stream); Console.WriteLine(reader.ReadToEnd()); } } return 0; }
-        if (args.Contains("--version")) { Console.WriteLine("Vale do Sol 7.0.0 | C# + .NET 10 + raylib 6.2 | Linux x86_64"); return 0; }
+        if (args.Contains("--licenses")) { foreach (string resource in new[] { "ValeDoSol.License.txt", "ValeDoSol.RaylibLicense.txt", "ValeDoSol.FontLicense.txt", "ValeDoSol.CharacterCredits.txt", "ValeDoSol.LpcCredits.txt", "ValeDoSol.LpcLicense.txt" }) { using var stream = typeof(Program).Assembly.GetManifestResourceStream(resource); if (stream != null) { using StreamReader reader = new(stream); Console.WriteLine(reader.ReadToEnd()); } } return 0; }
+        if (args.Contains("--version")) { Console.WriteLine("Vale do Sol 8.0.0 | C# + .NET 10 + raylib 6.2 | Linux x86_64"); return 0; }
         if (args.Contains("--self-test")) return SelfTests.Run();
         if (args.Contains("--help")) { Console.WriteLine("Vale do Sol - C#\n--version\n--save-dir DIRETORIO\n--smoke (fecha após 60 quadros)\n--screenshot ARQUIVO.png\n--village (somente com --smoke)"); return 0; }
         bool smoke = false, village = false, home = false, shop = false; string? screenshot = null, dir = null, exportArt = null; Scene? preview = null;

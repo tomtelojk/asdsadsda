@@ -10,7 +10,7 @@ public static class Art
     public const int Tree = 144, Bush = 145, Flowers = 146, Rock = 147, Log = 148, Fence = 149, Crop = 150, Portrait = 176;
     static Texture atlas;
     public static bool Ready => atlas.id != 0;
-    public static readonly uint[] Coats = [0x386b46, 0x416a42, 0x537b91, 0x76618d, 0x6b8648, 0x9b5060, 0xd4d8be, 0x398a87, 0x8b6a4b];
+    public static readonly uint[] Coats = [0x386b46, 0x416a42, 0x537b91, 0x8b72a8, 0x6b8648, 0x913f50, 0x708354, 0x398a87, 0x8b6a4b];
     public static readonly uint[] Hairs = [0x5a3529, 0xa94b29, 0x5b3f30, 0x302f38, 0x74503a, 0xc3bab0, 0x343034, 0x47302d, 0xaba090];
     static readonly uint[] Skins = [0xe9b887, 0xefbd91, 0xd9a076, 0xae7653, 0xe4b68b, 0xe1b092, 0xd6a37b, 0xb87c56, 0xdab38e];
     public static uint Shade(uint c, int change) => (uint)(Math.Clamp((int)(c >> 16) + change, 0, 255) << 16 | Math.Clamp((int)(c >> 8 & 255) + change, 0, 255) << 8 | Math.Clamp((int)(c & 255) + change, 0, 255));
@@ -29,7 +29,7 @@ public static class Art
         public void Leaf(int x, int y, int rx, int ry, uint c) { Shape(x, y, rx, ry, c, 0x315431); Ellipse(x - rx / 4, y - ry / 3, Math.Max(1, rx / 2), Math.Max(1, ry / 3), Shade(c, 19)); }
         public void Flower(int x, int y, uint c) { Ellipse(x, y - 2, 2, 2, c); Ellipse(x - 2, y, 2, 2, c); Ellipse(x + 2, y, 2, 2, c); Ellipse(x, y + 2, 2, 2, c); Rect(x, y, 2, 2, 0xf5c45e); }
     }
-    static void Character(Canvas p, int who, int face, int frame)
+    static void CharacterBase(Canvas p, int who, int face, int frame)
     {
         uint skin = Skins[who], hair = Hairs[who], coat = Coats[who], dark = Shade(coat, -27), light = Shade(coat, 25);
         bool woman = who is 1 or 3 or 5 or 7, back = face == 3, side = face is 1 or 2;
@@ -69,6 +69,144 @@ public static class Art
         if (who == 6) { p.Rect(62, 84 + bob, 4, 16, 0x737f72); p.Line(57, 79 + bob, 62, 90 + bob, 0xf7eed6, 2); p.Rect(72, 88 + bob, 5, 2, 0xaf5350); p.Rect(74, 86 + bob, 2, 6, 0xaf5350); }
         if (who == 7) { for (int i = 0; i < 5; i++) p.Shape(48 + i * 7, 45 + Math.Abs(2 - i) * 4 + bob, 6, 6, i % 2 == 0 ? hair : Shade(hair, 14)); p.Rect(58, 83 + bob, 13, 3, 0xd7a64e); }
         if (who == 8) { p.Rect(61, 81 + bob, 6, 16, 0xcba85e); p.Rect(64, 81 + bob, 2, 16, 0xe6ca8e); }
+    }
+    static void Character(Canvas p, int who, int face, int frame)
+    {
+        if (who == 0) { CharacterBase(p, who, face, frame); return; }
+        uint skin = Skins[who], hair = Hairs[who], coat = Coats[who];
+        bool back = face == 3, side = face is 1 or 2;
+        int look = face == 1 ? -1 : face == 2 ? 1 : 0;
+        int step = frame switch { 1 => 3, 3 => -3, _ => 0 }, bob = frame is 1 or 3 ? -1 : 0;
+        int shoulders = who == 2 ? 19 : who == 4 ? 13 : who == 8 ? 14 : 16;
+        uint trouser = who is 1 or 5 ? Shade(coat, -28) : who == 3 ? 0x5d6842u : 0x514a3bu;
+        uint sleeve = who is 3 or 4 or 8 ? 0xf0dfbd : who == 1 ? 0x315f3d : coat;
+        int hy = 59 + bob;
+
+        // Different rear silhouettes remain recognizable from every direction.
+        if (who == 1) { p.Shape(63, 69 + bob, 22, 27, Shade(hair, -18)); p.Shape(78, 42 + bob, 11, 11, hair); }
+        if (who == 3) p.Shape(64, 61 + bob, 22, 21, Shade(hair, -14));
+        if (who == 5) { p.Shape(65, 67 + bob, 20, 23, Shade(hair, -18)); p.Shape(76, 39 + bob, 12, 11, hair); }
+        if (who == 7)
+        {
+            p.Shape(64, 61 + bob, 28, 29, Shade(hair, -17));
+            for (int i = 0; i < 9; i++) p.Shape(43 + i % 2 * 42, 46 + i * 5 + bob, 7, 7, i % 2 == 0 ? hair : Shade(hair, 9));
+        }
+        p.Shape(57, 103 + step, 6, 10, trouser); p.Shape(71, 103 - step, 6, 10, trouser);
+        p.Line(55, 99 + step, 55, 108 + step, Shade(trouser, 15), 2);
+        p.Line(69, 99 - step, 69, 108 - step, Shade(trouser, 15), 2);
+        p.Shape(55 + look, 111 + step, who == 2 ? 9 : 8, 5, 0x563c2e);
+        p.Shape(72 + look, 111 - step, who == 2 ? 9 : 8, 5, 0x563c2e);
+        p.Line(49 + look, 110 + step, 57 + look, 109 + step, 0xa37b50, 2);
+        p.Line(66 + look, 110 - step, 74 + look, 109 - step, 0xa37b50, 2);
+        p.Line(48 + look, 115 + step, 61 + look, 115 + step, 0x332d26);
+        p.Line(65 + look, 115 - step, 78 + look, 115 - step, 0x332d26);
+        p.Shape(64, 89 + bob, shoulders, 17, coat);
+        p.Ellipse(58, 85 + bob, shoulders - 6, 10, Shade(coat, 17));
+        p.Line(78, 87 + bob, 76, 100 + bob, Shade(coat, -24), 2);
+        p.Line(51, 101 + bob, 76, 101 + bob, Shade(coat, -29), 2);
+        p.Shape(45, 86 + step + bob, 6, 10, sleeve);
+        p.Shape(82, 86 - step + bob, 6, 10, sleeve);
+        p.Line(42, 87 + step + bob, 49, 87 + step + bob, Shade(sleeve, 23), 2);
+        p.Line(79, 87 - step + bob, 86, 87 - step + bob, Shade(sleeve, 23), 2);
+        p.Shape(45, 97 + step + bob, 4, 5, skin);
+        p.Shape(82, 97 - step + bob, 4, 5, skin);
+        p.Pixel(43, 95 + step + bob, Shade(skin, 17));
+        p.Pixel(80, 95 - step + bob, Shade(skin, 17));
+        p.Rect(59, 73 + bob, 11, 8, Shade(skin, -17));
+
+        // Collars, seams, aprons and accessories match the illustrated portraits.
+        if (who == 1)
+        {
+            p.Shape(64, 99 + bob, 17, 7, 0x315f3d);
+            if (!back) { p.Rect(54, 84 + bob, 21, 18, 0xc79c3e); p.Rect(54, 80 + bob, 3, 12, 0xe4b65c); p.Rect(72, 80 + bob, 3, 12, 0xe4b65c); p.Rect(59, 90 + bob, 11, 7, 0xe1b55b); p.Line(54, 100 + bob, 75, 100 + bob, 0xa67b36); }
+        }
+        if (who == 2)
+        {
+            p.Line(52, 81 + bob, 76, 81 + bob, 0x83a5ba, 2);
+            p.Rect(52, 85 + bob, 25, 19, 0x996b3d);
+            p.Line(55, 80 + bob, 57, 90 + bob, 0x67472e, 3); p.Line(72, 80 + bob, 72, 90 + bob, 0x67472e, 3);
+            p.Rect(58, 92 + bob, 12, 8, 0xb5834b); p.Line(59, 93 + bob, 69, 93 + bob, 0xd1a260);
+            if (!back) { p.Rect(55, 85 + bob, 3, 3, 0xe0b34f); p.Rect(72, 85 + bob, 3, 3, 0xe0b34f); }
+        }
+        if (who is 3 or 4 or 6 or 8)
+        {
+            if (!back)
+            {
+                p.Line(56, 78 + bob, 62, 85 + bob, 0xf5e8cf, 3); p.Line(72, 78 + bob, 66, 85 + bob, 0xf5e8cf, 3);
+                p.Rect(63, 85 + bob, 3, 16, 0xe2d4b5);
+                for (int yy = 88; yy < 102; yy += 5) p.Rect(64, yy + bob, 1, 1, 0x8b704e);
+                p.Line(53, 87 + bob, 59, 87 + bob, Shade(coat, -26)); p.Line(69, 87 + bob, 75, 87 + bob, Shade(coat, -26));
+                if (who == 6) { p.Line(57, 83 + bob, 59, 80 + bob, 0x355932); p.Pixel(55, 82 + bob, 0x608343); p.Pixel(59, 81 + bob, 0x608343); }
+                if (who == 8) { p.Rect(63, 83 + bob, 3, 13, 0xcaa452); p.Rect(64, 84 + bob, 1, 11, 0xf0cb79); }
+            }
+            p.Line(51, 99 + bob, 59, 99 + bob, Shade(coat, 16)); p.Line(69, 99 + bob, 76, 99 + bob, Shade(coat, 16));
+        }
+        if (who == 5)
+        {
+            p.Shape(64, 100 + bob, 18, 6, coat);
+            p.Rect(54, 84 + bob, 22, 19, 0xefdec0); p.Line(54, 82 + bob, 56, 91 + bob, 0xffebcc, 3); p.Line(74, 82 + bob, 73, 91 + bob, 0xffebcc, 3);
+            p.Line(58, 90 + bob, 70, 90 + bob, 0xc79557); p.Pixel(59, 88 + bob, 0x78904b); p.Pixel(65, 89 + bob, 0x78904b);
+            p.Line(55, 101 + bob, 75, 101 + bob, 0xc6b698);
+        }
+        if (who == 7)
+        {
+            p.Shape(64, 99 + bob, 18, 6, coat);
+            if (!back) { p.Line(54, 81 + bob, 62, 88 + bob, 0xe9c379, 2); p.Line(74, 81 + bob, 66, 88 + bob, 0xe9c379, 2); p.Line(64, 87 + bob, 64, 99 + bob, Shade(coat, -32)); for (int yy = 89; yy < 99; yy += 4) { p.Line(61, yy + bob, 66, yy + 3 + bob, 0xd9b065); p.Line(66, yy + bob, 61, yy + 3 + bob, 0xd9b065); } }
+        }
+
+        p.Shape(64 + look * 2, hy, side ? 14 : 17, who == 2 ? 21 : 20, skin);
+        p.Ellipse(58 + look * 2, hy - 5, side ? 10 : 12, 12, Shade(skin, 15));
+        p.Shape(46 + look, hy + 2, 3, 5, skin); p.Shape(82 + look, hy + 2, 3, 5, skin);
+        p.Line(48 + look, hy + 1, 48 + look, hy + 4, Shade(skin, -21));
+        p.Line(80 + look, hy + 1, 80 + look, hy + 4, Shade(skin, -21));
+        if (back) p.Shape(64, hy - 2, 18, 20, hair);
+        else
+        {
+            uint iris = who is 1 or 4 ? 0x386a41u : who == 3 ? 0x704a72u : 0x674d36u;
+            foreach (int ex in side ? new[] { 64 + look * 8 } : new[] { 56, 72 })
+            {
+                p.Line(ex - 3, hy - 7, ex + 3, hy - 8, Shade(hair, -12), 2);
+                p.Shape(ex, hy, 4, 5, 0xfff0d0);
+                p.Rect(ex + look - 1, hy - 3, 4, 8, iris); p.Rect(ex + look, hy - 2, 2, 6, 0x252d28);
+                p.Rect(ex + look - 1, hy - 3, 2, 2, 0xffffff); p.Pixel(ex + look + 2, hy + 3, Shade(iris, 31));
+                p.Line(ex - 3, hy - 4, ex + 3, hy - 4, 0x49362c);
+            }
+            p.Line(64 + look * 5, hy + 3, 65 + look * 5, hy + 7, Shade(skin, -25));
+            p.Line(61 + look * 4, hy + 12, 67 + look * 4, hy + 11, 0x975d45);
+            p.Line(63 + look * 4, hy + 13, 66 + look * 4, hy + 13, Shade(skin, 19));
+            if (who is 1 or 3 or 5 or 7) { p.Line(51, hy + 7, 55, hy + 7, Shade(skin, -7)); p.Line(74, hy + 7, 78, hy + 7, Shade(skin, -7)); }
+            if (who == 2)
+            {
+                p.Shape(65 + look, hy + 14, side ? 12 : 15, 10, hair);
+                p.Ellipse(61 + look, hy + 18, 8, 5, Shade(hair, 15)); p.Line(58 + look, hy + 10, 69 + look, hy + 10, skin, 2);
+                p.Line(62 + look, hy + 11, 67 + look, hy + 11, 0x633d2b);
+            }
+            if (who == 6) { p.Line(55 + look, hy + 13, 60 + look, hy + 18, hair); p.Line(61 + look, hy + 18, 69 + look, hy + 16, hair); p.Line(61 + look, hy + 9, 69 + look, hy + 9, hair); }
+            if (who == 8) { p.Shape(64 + look, hy + 10, 10, 3, hair); p.Line(63 + look, hy + 15, 68 + look, hy + 14, Shade(hair, 14), 2); }
+            if (who is 4 or 8)
+            {
+                foreach (int ex in side ? new[] { 64 + look * 8 } : new[] { 56, 72 })
+                { p.Line(ex - 5, hy - 4, ex + 5, hy - 4, 0x615139); p.Line(ex - 5, hy - 4, ex - 5, hy + 4, 0x615139); p.Line(ex + 5, hy - 4, ex + 5, hy + 4, 0x615139); p.Line(ex - 4, hy + 5, ex + 4, hy + 5, 0x615139); }
+                p.Line(61, hy - 1, 67, hy - 1, 0x615139);
+            }
+        }
+        p.Shape(64, hy - 17, side ? 17 : 19, 11, hair);
+        for (int i = 0; i < 6; i++)
+        {
+            int hx = 49 + i * 6, yy = hy - 15 + i % 2 * 3;
+            p.Shape(hx, yy, 6, 6, i % 2 == 0 ? Shade(hair, 13) : hair);
+            p.Line(hx - 2, yy - 3, hx + 1, yy - 4, Shade(hair, 28));
+        }
+        p.Ellipse(47, hy - 6, 5, 10, hair); p.Ellipse(81, hy - 7, 5, 10, hair);
+        if (back) p.Ellipse(62, hy - 2, 16, 14, hair);
+        if (who == 1) { p.Shape(79, hy - 23, 10, 10, hair); p.Line(74, hy - 27, 80, hy - 29, Shade(hair, 30), 2); p.Flower(83, hy - 17, 0xffedca); p.Ellipse(48, hy + 7, 5, 13, hair); p.Line(46, hy + 2, 47, hy + 15, Shade(hair, 20), 2); }
+        if (who == 3) { p.Shape(64, hy - 24, 22, 9, 0x9380b2); p.Shape(68 + look * 4, hy - 17, 22, 4, 0x70628c); p.Line(49, hy - 28, 73, hy - 30, 0xb6a1c8, 2); p.Rect(80, hy - 21, 3, 3, 0xd8b56b); }
+        if (who == 5) { p.Shape(76, hy - 24, 12, 10, hair); p.Line(69, hy - 29, 78, hy - 31, Shade(hair, 26), 2); p.Line(76, hy - 23, 84, hy - 21, Shade(hair, -24)); }
+        if (who == 7)
+        {
+            for (int i = 0; i < 7; i++) { int hx = 43 + i * 7, yy = hy - 19 + Math.Abs(3 - i) * 3; p.Shape(hx, yy, 7, 7, i % 2 == 0 ? hair : Shade(hair, 11)); p.Line(hx - 2, yy - 3, hx + 1, yy - 4, Shade(hair, 26)); }
+            p.Rect(43, hy + 10, 2, 5, 0xe8bd5b); p.Rect(84, hy + 10, 2, 5, 0xe8bd5b);
+        }
     }
     static void PortraitArt(Canvas p, int who)
     {
@@ -116,13 +254,18 @@ public static class Art
         try { Image image = new() { data = pin.AddrOfPinnedObject(), width = canvas.Width, height = canvas.Height, mipmaps = 1, format = 7 }; atlas = LoadTextureFromImage(image); SetTextureFilter(atlas, TEXTURE_FILTER_POINT); }
         finally { pin.Free(); }
         if (!Ready) throw new InvalidOperationException("Não foi possível criar a folha de sprites.");
+        Portraits.Init();
     }
-    public static void Unload() { if (Ready) { UnloadTexture(atlas); atlas = default; } }
+    public static void Unload() { Portraits.Unload(); if (Ready) { UnloadTexture(atlas); atlas = default; } }
     public static void Draw(int id, double x, double y, double scale = 1, Color? tint = null)
     {
         DrawTexturePro(atlas, new(id % Columns * Cell, id / Columns * Cell, Cell, Cell), new(x - 64 * scale, y - 116 * scale, Cell * scale, Cell * scale), new(), 0, tint ?? WHITE);
     }
     public static void Person(int npc, double x, double y, int face, double time = 0) { int frame = time <= 0 ? 0 : (int)(time * 8) % 4; Draw((npc + 1) * 16 + face * 4 + frame, Math.Round(x * 2) / 2, Math.Round(y * 2) / 2, .5); }
-    public static void PortraitDraw(int npc, double x, double y, double size) => DrawTexturePro(atlas, new((Portrait + npc + 1) % Columns * Cell, (Portrait + npc + 1) / Columns * Cell, Cell, Cell), new(x, y, size, size), new(), 0, WHITE);
+    public static void PortraitDraw(int npc, double x, double y, double size)
+    {
+        if (npc >= 0) { Portraits.Draw(npc, new(x, y, size, size)); return; }
+        DrawTexturePro(atlas, new(Portrait % Columns * Cell, Portrait / Columns * Cell, Cell, Cell), new(x, y, size, size), new(), 0, WHITE);
+    }
     public static bool Export(string path) { Image image = LoadImageFromTexture(atlas); bool ok = ExportImage(image, path); UnloadImage(image); return ok; }
 }

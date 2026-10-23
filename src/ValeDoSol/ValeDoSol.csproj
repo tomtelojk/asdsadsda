@@ -6,11 +6,13 @@
     <RootNamespace>ValeDoSol</RootNamespace>
     <Nullable>enable</Nullable>
     <ImplicitUsings>enable</ImplicitUsings>
-    <Version>7.0.0</Version>
+    <Version>8.0.0</Version>
     <AllowUnsafeBlocks>true</AllowUnsafeBlocks>
     <JsonSerializerIsReflectionEnabledByDefault>false</JsonSerializerIsReflectionEnabledByDefault>
   </PropertyGroup>
   <ItemGroup>
+    <EmbeddedResource Include="Resources/Characters/*.png" LogicalName="ValeDoSol.Characters.%(Filename)%(Extension)" />
+    <EmbeddedResource Include="Resources/Characters/CREDITS.txt" LogicalName="ValeDoSol.CharacterCredits.txt" />
     <EmbeddedResource Include="Resources/Lpc/*.png" LogicalName="ValeDoSol.Lpc.%(Filename)%(Extension)" />
     <EmbeddedResource Include="Resources/Lpc/CC-BY-SA-3.0.txt" LogicalName="ValeDoSol.LpcLicense.txt" />
     <EmbeddedResource Include="Resources/Lpc/CREDITS.txt" LogicalName="ValeDoSol.LpcCredits.txt" />

@@ -15,7 +15,7 @@ public static class Ray
 {
     const string Lib = "raylib";
     public const int KEY_NULL = 0, KEY_SPACE = 32, KEY_ESCAPE = 256, KEY_TAB = 258, KEY_F5 = 294, KEY_F11 = 300, KEY_ONE = 49, KEY_A = 65, KEY_D = 68, KEY_E = 69, KEY_F = 70, KEY_H = 72, KEY_S = 83, KEY_W = 87, KEY_RIGHT = 262, KEY_LEFT = 263, KEY_DOWN = 264, KEY_UP = 265;
-    public const int KEY_I = 73, KEY_J = 74, KEY_R = 82, KEY_LEFT_SHIFT = 340, KEY_ENTER = 257, MOUSE_BUTTON_RIGHT = 1;
+    public const int KEY_M = 77, KEY_I = 73, KEY_J = 74, KEY_R = 82, KEY_LEFT_SHIFT = 340, KEY_ENTER = 257, MOUSE_BUTTON_RIGHT = 1;
     public const int MOUSE_BUTTON_LEFT = 0, MOUSE_CURSOR_DEFAULT = 0, MOUSE_CURSOR_POINTING_HAND = 4, FLAG_WINDOW_RESIZABLE = 4, FLAG_VSYNC_HINT = 64, LOG_WARNING = 4, TEXTURE_FILTER_POINT = 0;
     public static readonly Color WHITE = new(255, 255, 255);
     [DllImport(Lib, CallingConvention = CallingConvention.Cdecl)] public static extern void SetConfigFlags(uint flags);

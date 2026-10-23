@@ -56,7 +56,7 @@ public static class NpcBehavior
         }
         else if (npc == 3 && activity.scene == Scene.FARM)
         {
-            destination = Select(cycle, new(816, 272), new(816, 336), new(816, 432), new(864, 448));
+            destination = Select(cycle, new(688, 656), new(688, 752), new(688, 816), new(688, 944));
             label = Choice(cycle, 4) switch { 0 => "Anotando o crescimento das folhas", 1 => "Comparando a terra dos canteiros", 2 => "Observando as flores da horta", _ => "Desenhando uma descoberta no caderno" };
             pose = NpcPose.Inspect; facing = 1;
         }
@@ -78,6 +78,11 @@ public static class NpcBehavior
             label = Choice(cycle, 4) == 3 ? "Conversando com quem passa pela banca" : "Arrumando as cestas de pão";
             pose = NpcPose.Carry; facing = 0;
         }
+        else if (npc == 5 && activity.scene == Scene.FARM)
+        {
+            destination = Select(cycle, new(688, 656), new(592, 752), new(688, 816), new(784, 880));
+            label = "Conferindo as folhas da nova horta"; pose = NpcPose.Inspect; facing = 1;
+        }
         else if (npc == 5 && activity.scene == Scene.GREENHOUSE)
         {
             destination = Select(cycle, new(304, 192), new(432, 192), new(592, 192), new(528, 272), new(224, 224));
@@ -86,7 +91,7 @@ public static class NpcBehavior
         }
         else if (npc == 5 && activity.scene == Scene.VILLAGE && (Has(activity, "horta") || Has(activity, "erva")))
         {
-            destination = Select(cycle, new(688, 288), new(720, 288), new(752, 288), new(784, 288), new(720, 304));
+            destination = Select(cycle, new(688, 288), new(720, 288), new(688, 304), new(720, 304), new(704, 288));
             label = Choice(cycle, 5) == 4 ? "Limpando a ferramenta antes de guardar" : "Examinando as ervas do jardim";
             pose = NpcPose.Inspect; facing = 3;
         }
@@ -95,6 +100,12 @@ public static class NpcBehavior
             destination = Select(cycle, new(448, 224), new(352, 256), new(480, 272), new(352, 304));
             label = Choice(cycle, 4) switch { 0 => "Relendo o verso que escreveu", 1 => "Marcando o ritmo com os dedos", 2 => "Conferindo uma anotação na partitura", _ => "Procurando a próxima frase da canção" };
             pose = NpcPose.Read; facing = 3;
+        }
+        else if (activity.scene == Scene.TOWNHALL)
+        {
+            destination = Select(cycle, new(352, 240), new(256, 240), new(432, 272), new(352, 320));
+            label = npc == 7 ? "Conferindo as histórias e os registros da vila" : npc == 6 ? "Preparando o encontro cultural" : "Conversando sobre os planos da vila";
+            pose = npc == 4 ? NpcPose.Carry : NpcPose.Read; facing = 3;
         }
         else if (npc == 7 && activity.scene == Scene.LIBRARY)
         {

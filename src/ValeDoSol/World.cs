@@ -10,7 +10,7 @@ public static class World
     static void R(double x, double y, double w, double h, long c) => DrawRectangle(x, y, w, h, color_hex(c));
     static void Label(string s, double x, double y) { int w = MeasureText(s, 10); DrawRectangle(x - w / 2 - 4, y - 2, w + 8, 15, new Color(39, 33, 23, 165)); DrawText(s, x - w / 2, y, 10, color_hex(0xffedc6)); }
     static bool Visible(Game g, double x, double y, int margin = 128) => Math.Abs(x - g.camera.x) < UI_W / (2 * CAMERA_ZOOM) + margin && Math.Abs(y - g.camera.y) < UI_H / (2 * CAMERA_ZOOM) + margin;
-    static void Bubble(string message, Point p)
+    static void Bubble(Game g, string message, Point p)
     {
         List<string> lines = []; string current = "";
         foreach (string word in message.Split(' ', StringSplitOptions.RemoveEmptyEntries))
@@ -21,7 +21,10 @@ public static class World
         }
         if (current.Length > 0) lines.Add(current);
         int width = Math.Max(32, lines.Max(line => MeasureText(line, 9)) + 12), height = lines.Count * 12 + 10;
-        double x = Math.Round(p.x - width / 2f), y = Math.Round(p.y - 68 - height);
+        Point camera = render_camera(g);
+        double left = camera.x - UI_W / (2 * CAMERA_ZOOM), top = camera.y - UI_H / (2 * CAMERA_ZOOM);
+        double x = Math.Round(Math.Clamp(p.x - width / 2f, left + 6, left + UI_W / CAMERA_ZOOM - width - 6));
+        double y = Math.Round(Math.Max(top + 6, p.y - 68 - height));
         DrawRectangle(x - 1, y - 1, width + 2, height + 2, color_hex(0x68472e));
         DrawRectangle(x, y, width, height, color_hex(0xffebc0));
         DrawTriangle(new(p.x - 4, y + height), new(p.x, y + height + 5), new(p.x + 4, y + height), color_hex(0xffebc0));
@@ -60,7 +63,7 @@ public static class World
         DrawEllipse(p.x, p.y + 1, 13, 4, new Color(29, 38, 25, 76)); Art.Person(npc, p.x, p.y, face, moving ? g.elapsed + (npc + 1) * .23 : 0);
         if (npc < 0) return;
         if (!moving) TaskProp(g, npc, p);
-        if (g.npc_bubble_time[npc] > 0) Bubble(g.npc_bubble[npc], p);
+        if (g.dialog == Dialog.D_NONE && g.npc_bubble_time[npc] > 0) Bubble(g, g.npc_bubble[npc], p);
         else if (Physics.Distance(p, g.s.player) < 90)
         {
             Label(NPCS[npc].name, p.x, p.y - 63);
@@ -75,19 +78,84 @@ public static class World
         for (int i = 0; i < b.width / 28; i++) { R(b.x + i * 28 + 9, b.y + b.height - 4, 2, 11, 0x4d7137); R(b.x + i * 28 + 7, b.y + b.height - 8, 5, 7, 0x927147); }
         R(b.x + 44, b.y - 16, 84, 23, 0x775939); for (int i = 0; i < 6; i++) { R(b.x + 46 + i * 14, b.y - 16, 12, 20, 0xbb965f); R(b.x + 48 + i * 14, b.y - 13, 8, 1, 0xd9b678); }
     }
+    static void GardenFence(Rectangle fence)
+    {
+        // Render the same footprint that blocks feet; posts are visual height.
+        bool horizontal = fence.width > fence.height;
+        R(fence.x, fence.y, fence.width, fence.height, 0x62452e);
+        R(fence.x + 1, fence.y + 1, fence.width - 2, fence.height - 3, 0xba8b51);
+        R(fence.x + 1, fence.y + 1, fence.width - 2, 1, 0xe1bb7c);
+        if (horizontal)
+            for (int x = (int)fence.x; x < fence.x + fence.width; x += 32)
+            {
+                R(x, fence.y - 5, 6, 13, 0x735035); R(x + 1, fence.y - 5, 4, 11, 0xd1a469);
+                R(x + 2, fence.y - 5, 2, 2, 0xf0ce91);
+            }
+        else
+            for (int y = (int)fence.y; y < fence.y + fence.height; y += 32)
+            {
+                R(fence.x, y - 5, 8, 13, 0x735035); R(fence.x + 1, y - 5, 6, 11, 0xd1a469);
+                R(fence.x + 2, y - 5, 3, 2, 0xf0ce91);
+            }
+    }
     static void Farm(Game g)
     {
-        R(532, 244, 276, 212, 0x745131);
-        for (int i = 0; i < 48; i++) { Plot p = g.s.plots[i]; Point at = plot_position(i); R(at.x, at.y, 32, 32, p.tilled ? (p.watered ? 0x715238 : 0xa57948) : 0x769747); if (!p.tilled) Scenery.Draw("grass", new(32, 160, 32, 32), new(at.x, at.y, 32, 32)); if (p.tilled) for (int k = 0; k < 3; k++) { R(at.x + 2, at.y + 5 + k * 9, 28, 2, p.watered ? 0x594332 : 0x835e39); R(at.x + 3, at.y + 7 + k * 9, 25, 1, p.watered ? 0x836044 : 0xc19658); } if (p.crop >= 0) { int stage = p.growth == 0 ? 0 : p.growth >= CROPS[p.crop].days ? 2 : 1; Art.Draw(Art.Crop + p.crop * 3 + stage, at.x + 16, at.y + 29, .5); } if (g.hover == i && Physics.Distance(g.s.player, new(at.x + 16, at.y + 16)) < 78) DrawRectangleLinesEx(new(at.x + 1, at.y + 1, 30, 30), 1, color_hex(0xffe6b1)); }
-        for (int i = 0; i < 5; i++) { Art.Draw(Art.Fence, 550 + i * 60, 236, .65); Art.Draw(Art.Fence, 550 + i * 60, 488, .65); }
-        R(320, 286, 5, 33, 0x735539); R(304, 275, 34, 21, 0x995c41); R(307, 279, 28, 13, 0xc08a57); Label("VILA >", WORLD_W - 94, 328);
+        Rectangle garden = Garden.Bounds;
+        R(garden.x - 4, garden.y - 3, garden.width + 8, garden.height + 8, 0x536f3c);
+        Scenery.Tile("dirt", new(32, 160, 32, 32), garden);
+        foreach (Rectangle path in Garden.Paths)
+        {
+            R(path.x, path.y, path.width, path.height, 0xb39b65);
+            // Small, repeatable pebbles keep the aisles readable beside the soil.
+            for (int x = (int)path.x + 5; x < path.x + path.width; x += 23)
+                for (int y = (int)path.y + 5; y < path.y + path.height; y += 29)
+                    R(x, y, 2, 1, 0xcbb784);
+        }
+        foreach (Rectangle bed in Garden.Beds)
+        {
+            R(bed.x - 2, bed.y - 2, bed.width + 4, bed.height + 5, 0x59402b);
+            R(bed.x, bed.y, bed.width, bed.height, 0x8d633d);
+        }
+        for (int i = 0; i < g.s.plots.Length; i++)
+        {
+            Plot p = g.s.plots[i]; Point at = plot_position(i);
+            long soil = p.tilled ? p.watered ? 0x715238 : 0xa57948 : 0x8d764b;
+            R(at.x, at.y, 32, 32, soil);
+            if (p.tilled)
+                for (int k = 0; k < 3; k++)
+                {
+                    R(at.x + 2, at.y + 5 + k * 9, 28, 2, p.watered ? 0x594332 : 0x835e39);
+                    R(at.x + 3, at.y + 7 + k * 9, 25, 1, p.watered ? 0x836044 : 0xc19658);
+                }
+            else
+                for (int k = 0; k < 4; k++) R(at.x + 4 + k * 7, at.y + 6 + k * 11 % 21, 2, 2, 0xaf9564);
+            if (p.crop >= 0)
+            {
+                int stage = p.growth == 0 ? 0 : p.growth >= CROPS[p.crop].days ? 2 : 1;
+                Art.Draw(Art.Crop + p.crop * 3 + stage, at.x + 16, at.y + 29, .5);
+            }
+            if (g.hover == i && Physics.Distance(g.s.player, new(at.x + 16, at.y + 16)) < 78)
+                DrawRectangleLinesEx(new(at.x + 1, at.y + 1, 30, 30), 1, color_hex(0xffe6b1));
+        }
+        foreach (Rectangle bed in Garden.Beds)
+        {
+            // Raised timber edge belongs to the bed's solid rectangle.
+            R(bed.x, bed.y, bed.width, 2, 0xd6ad70);
+            R(bed.x, bed.y, 2, bed.height, 0xb8864d);
+            R(bed.x + bed.width - 2, bed.y, 2, bed.height, 0x775035);
+            R(bed.x, bed.y + bed.height - 4, bed.width, 4, 0x775035);
+            R(bed.x + 2, bed.y + bed.height - 4, bed.width - 4, 1, 0xb98851);
+            foreach (int corner in new[] { 4, (int)bed.width - 6 }) R(bed.x + corner, bed.y + bed.height - 2, 2, 1, 0xd4b17b);
+        }
+        foreach (Rectangle fence in Garden.Fences) GardenFence(fence);
+        Label("Horta Girassol - acesso pelos portões", garden.x + garden.width / 2, garden.y - 24);
+        R(320, 286, 5, 33, 0x735539); R(304, 275, 34, 21, 0x995c41);
+        R(307, 279, 28, 13, 0xc08a57); Label("VILA >", WORLD_W - 94, 328);
     }
     static void Square(Game g)
     {
-        Scenery.Tile("dirt", new(32, 160, 32, 32), new(432, 432, 288, 192));
-        foreach (Point p in new[] { new Point(432, 576), new Point(656, 576), new Point(432, 448) }) { R(p.x - 28, p.y - 14, 56, 8, 0x7b5738); R(p.x - 28, p.y - 4, 56, 5, 0xb58b50); R(p.x - 24, p.y + 2, 5, 10, 0x62482f); R(p.x + 19, p.y + 2, 5, 10, 0x62482f); }
+        TownArt.Ground(g);
         for (int i = 0; i < 6; i++) { int x = 400 + i * 64; DrawLine(x, 328, x + 64, 334, color_hex(0x8b7655)); DrawTriangle(new(x + 10, 329), new(x + 23, 343), new(x + 36, 332), color_hex(i % 2 == 0 ? 0xc77861 : 0xd2b56e)); }
-        for (int i = 0; i < 7; i++) { R(680 + i * 15, 248, 13, 19, 0x876341); Art.Draw(Art.Crop + 1, 686 + i * 15, 265, .35); }
         Label("< FAZENDA", 94, 328);
     }
     static void CommunityGarden(Game g)
@@ -108,7 +176,40 @@ public static class World
     }
     static void Fountain(Game g)
     {
-        Rectangle f = Map.Fountain; R(f.x - 5, f.y, f.width + 10, f.height + 6, 0x696d61); R(f.x, f.y - 5, f.width, f.height, 0xc5c3a6); R(f.x + 8, f.y + 4, f.width - 16, f.height - 14, 0x669ca7); R(f.x + 42, f.y - 27, 13, 48, 0xa7ad99); R(f.x + 35, f.y - 28, 27, 6, 0xe1ddbf); for (int i = 0; i < 4; i++) R(f.x + 44 + i * 2, f.y - 21 + Math.Sin(g.elapsed * 3 + i) * 4, 2, 10, 0xb9d5d0);
+        Rectangle b = Map.Fountain; double cx = b.x + b.width / 2, cy = b.y + b.height / 2;
+        DrawEllipse(cx + 3, cy + 13, 52, 25, new Color(32, 40, 29, 46));
+        DrawEllipse(cx, cy + 5, 49, 27, color_hex(0x727765));
+        DrawEllipse(cx, cy - 1, 49, 26, color_hex(0xc1baa0));
+        DrawEllipse(cx, cy - 4, 43, 21, color_hex(0xe0d4b4));
+        DrawEllipse(cx, cy - 4, 36, 16, color_hex(0x527f83));
+        DrawEllipse(cx, cy - 7, 33, 12, color_hex(0x7cb6b2));
+        for (int i = 0; i < 7; i++)
+        {
+            double x = cx - 38 + i * 12, y = cy + 16 + (i is 0 or 6 ? -7 : i is 1 or 5 ? -2 : 2);
+            R(x, y, 9, 5, i % 2 == 0 ? 0x8f947f : 0xa5a58c);
+            R(x, y, 9, 1, 0xd1c6a6);
+        }
+        // Native-size stone tiers sit inside the physical basin, sorted at its base.
+        R(cx - 7, cy - 38, 14, 32, 0x8e9a84); R(cx - 5, cy - 38, 5, 29, 0xc8cbb0);
+        DrawEllipse(cx, cy - 35, 19, 6, color_hex(0xa2ae93));
+        DrawEllipse(cx, cy - 38, 20, 6, color_hex(0xddd8b9));
+        DrawEllipse(cx, cy - 39, 14, 3, color_hex(0x78aaa6));
+        R(cx - 3, cy - 53, 6, 16, 0xc1c8a8); R(cx - 2, cy - 52, 2, 14, 0xe7e1c0);
+        DrawCircle(cx, cy - 54, 5, color_hex(0xd5cd9f));
+        foreach (int side in new[] { -1, 1 })
+        {
+            Point last = new(cx + side * 13, cy - 37);
+            for (int step = 1; step <= 5; step++)
+            {
+                Point next = new(cx + side * (13 + step * 3), cy - 37 + step * step * 1.2);
+                DrawLineEx(last, next, 1, color_hex(0xb7ddcf)); last = next;
+            }
+        }
+        for (int i = 0; i < 5; i++)
+        {
+            double px = cx - 27 + i * 13, py = cy - 7 + Math.Sin(g.elapsed * 2 + i) * 3;
+            R(px, py, 6, 1, 0xd0e5ca);
+        }
     }
     static void Interior(Game g)
     {
@@ -137,10 +238,18 @@ public static class World
         for (int i = 0; i < RESOURCES.Length; i++) { Resource res = RESOURCES[i]; if (res.scene == scene && (s.gathered & (1u << i)) == 0) Art.Draw(res.type == 0 ? Art.Log : Art.Rock, res.x * 32 + 16, res.y * 32 + 16, .58); }
         for (int i = 0; i < 90; i++) { int x = 80 + i * 227 % 1880, y = 176 + i * 191 % 1120; if (Visible(g, x, y) && !blocked(scene, x, y) && (scene != FARM || plot_at(x, y) < 0) && !Map.Roads(scene).Any(r => Map.Touch(new(x - 12, y - 12, 24, 24), r))) Art.Draw(i % 4 == 0 ? Art.Bush : Art.Flowers, x, y, i % 4 == 0 ? .55 : .4); }
         int[][] trees = Map.Trees(scene); List<RenderItem> items = []; for (int i = 0; i < trees.Length; i++) if (Visible(g, trees[i][0] * 32 + 16, trees[i][1] * 32 + 16)) items.Add(new(trees[i][1] * 32 + 16, 0, i));
-        if (scene == VILLAGE) items.Add(new(Map.Fountain.y + Map.Fountain.height, 4, 0));
-        Place[] places = Map.Places(scene).ToArray(); for (int i = 0; i < places.Length; i++) if (Visible(g, places[i].Door.x, places[i].Door.y, 256)) items.Add(new(places[i].Door.y - 16, 3, i));
+        if (scene == VILLAGE)
+        {
+            items.Add(new(Map.Fountain.y + Map.Fountain.height, 4, 0));
+            for (int i = 0; i < VillageProps.All.Length; i++)
+            {
+                Rectangle f = VillageProps.All[i].footprint;
+                if (Visible(g, f.x + f.width / 2, f.y + f.height / 2)) items.Add(new(f.y + f.height, 5, i));
+            }
+        }
+        Place[] places = Map.Places(scene).ToArray(); for (int i = 0; i < places.Length; i++) if (Visible(g, places[i].Door.x, places[i].Door.y, places[i].building.type == 7 ? 360 : 256)) items.Add(new(places[i].Door.y - 16, 3, i));
         for (int i = 0; i < Social.Count; i++) if (g.npc_scene[i] == scene && Visible(g, g.npc_position[i].x, g.npc_position[i].y)) items.Add(new(g.npc_position[i].y, 1, i)); items.Add(new(s.player.y, 2, -1));
-        foreach (RenderItem item in items.OrderBy(i => i.y)) { if (item.type == 0) { int x = trees[item.index][0] * 32 + 16, y = trees[item.index][1] * 32 + 16; bool obscures = Math.Abs(x - s.player.x) < 45 && s.player.y < y && s.player.y > y - 112; Scenery.Tree(x, y, item.index, new Color(255, 255, 255, obscures ? 100 : 255)); } else if (item.type == 4) Fountain(g); else if (item.type == 3) Scenery.House(places[item.index].building, s.minute >= 1080); else Person(g, item.type == 2 ? -1 : item.index); }
+        foreach (RenderItem item in items.OrderBy(i => i.y)) { if (item.type == 0) { int x = trees[item.index][0] * 32 + 16, y = trees[item.index][1] * 32 + 16; bool obscures = Math.Abs(x - s.player.x) < 45 && s.player.y < y && s.player.y > y - 112; Scenery.Tree(x, y, item.index, new Color(255, 255, 255, obscures ? 100 : 255)); } else if (item.type == 5) TownArt.DrawProp(g, VillageProps.All[item.index]); else if (item.type == 4) Fountain(g); else if (item.type == 3) Scenery.House(places[item.index].building, s.minute >= 1080); else Person(g, item.type == 2 ? -1 : item.index); }
         if (g.action_timer > 0) { double phase = 1 - g.action_timer / .32; Point p = g.action_target; if (g.tool == 2) for (int i = 0; i < 5; i++) R(p.x - 12 + i * 6, p.y - 20 + phase * 24 + i % 2 * 3, 2, 4, 0x8dcbd2); else { DrawLineEx(new(s.player.x + 9, s.player.y - 18), new(p.x - 8, p.y - 10 - Math.Sin(phase * Math.PI) * 18), 3, color_hex(0x8e633c)); R(p.x - 14, p.y - 12 - Math.Sin(phase * Math.PI) * 18, 14, 5, 0xa4b1a4); } }
         float evening = Math.Clamp((s.minute - 1020) / 550f, 0, .5f); if (evening > 0) DrawRectangle(0, 0, WORLD_W, WORLD_H, new Color(28, 32, 60, (int)(255 * evening)));
         if (raining(s)) { DrawRectangle(0, 0, WORLD_W, WORLD_H, new Color(70, 92, 117, 42)); for (int i = 0; i < 150; i++) DrawRectangle(g.camera.x - 480 + (i * 149 + time * 70) % 960, g.camera.y - 280 + (i * 83 + time * 360) % 560, 1, 8, new Color(190, 218, 224, 130)); }

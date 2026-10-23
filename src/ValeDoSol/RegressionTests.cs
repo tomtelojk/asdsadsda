@@ -13,22 +13,25 @@ public static class RegressionTests
         check(Physics.FindPath(FARM, start, goal, direct) == 1 && Physics.Distance(direct[0], goal) < .001f,
             "buffer com uma posição aceita um trajeto direto");
 
-        // In every direction the intended plot is eight. A distant mouse hover must not
-        // redirect a keyboard action or prevent it from reaching the plot in front.
-        Point[] positions = [new(560, 272), new(592, 304), new(528, 304), new(560, 336)];
+        // Approach actual raised beds from their walkable aisles. Each keyboard
+        // direction must use the tile in front, independent of a distant hover.
+        int[] targets = [24, 9, 10, 16];
+        Point[] positions = [new(528, 816), new(592, 752), new(592, 752), new(528, 816)];
         for (int facing = 0; facing < positions.Length; facing++)
         {
+            int target = targets[facing];
             Game farm = new() { tool = 1, hover = 47, facing = facing };
-            farm.s.player = positions[facing];
+            farm.s.player = positions[facing]; farm.s.plots[target].tilled = true;
             int seeds = farm.s.seeds[0], energy = farm.s.energy;
             GameLogic.use_tool(farm);
-            check(farm.s.plots[8].crop == 0 && farm.s.seeds[0] == seeds - 1 && farm.s.energy == energy - 3 && farm.s.plots[47].crop == -1,
+            check(!Physics.Blocked(FARM, farm.s.player.x, farm.s.player.y) && farm.s.plots[target].crop == 0 && farm.s.seeds[0] == seeds - 1 && farm.s.energy == energy - 3 && farm.s.plots[47].crop == -1,
                 $"ferramenta pelo teclado alcança o canteiro à frente na direção {facing}, independentemente do mouse");
         }
 
         CheckStationaryPlayerCollision(check);
         CheckSaleLimits(check);
         CheckPresentation(check);
+        CheckPortraits(check);
         Game doorway = new();
         doorway.s.scene = VILLAGE; doorway.s.player = new(848, 328);
         doorway.npc_scene[1] = VILLAGE; doorway.npc_position[1] = new(832, 328);
@@ -129,6 +132,31 @@ public static class RegressionTests
             "dez segundos a vinte ou sessenta quadros avançam o mesmo tempo de simulação");
         check(invalid.Advance(double.NaN) == 0 && invalid.Advance(-1) == 0 && invalid.Advance(10) == FixedStepClock.MaxSteps,
             "relógio rejeita tempo inválido e limita trabalho acumulado após uma pausa do sistema");
+    }
+
+    static void CheckPortraits(Action<bool, string> check)
+    {
+        check(Portraits.Count == Social.Count && Portraits.Definitions.Count == Social.Count, "cada morador possui um retrato próprio na edição distribuída");
+        HashSet<string> portraits = [];
+        for (int npc = 0; npc < Social.Count; npc++)
+        {
+            PortraitDefinition portrait = Portraits.Definitions[npc];
+            using var stream = typeof(Portraits).Assembly.GetManifestResourceStream(portrait.Resource);
+            using MemoryStream data = new(); stream?.CopyTo(data); byte[] bytes = data.ToArray();
+            bool png = bytes.Length >= 24 && bytes.AsSpan(0, 8).SequenceEqual(new byte[] { 137, 80, 78, 71, 13, 10, 26, 10 });
+            check(png && portrait.Name == NPCS[npc].name && System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(bytes.AsSpan(16, 4)) == portrait.Width && System.Buffers.Binary.BinaryPrimitives.ReadInt32BigEndian(bytes.AsSpan(20, 4)) == portrait.Height,
+                $"retrato de {NPCS[npc].name} está embutido com dimensões iguais ao arquivo PNG original");
+            check(portraits.Add(Convert.ToHexString(System.Security.Cryptography.SHA256.HashData(bytes))) && portrait.Source.x == 0 && portrait.Source.y == 0 && portrait.Source.width == portrait.Width && portrait.Source.height == portrait.Height,
+                $"retrato de {NPCS[npc].name} usa uma imagem distinta e completa, sem recorte de cabelo ou ombros");
+            foreach (Rectangle area in new[] { new Rectangle(13, 29, 136, 136), new Rectangle(17, 41, 136, 88), new Rectangle(23, 31, 68, 102) })
+            {
+                Rectangle fit = Portraits.Fit(npc, area);
+                check(fit.x >= area.x && fit.y >= area.y && fit.x + fit.width <= area.x + area.width + .001f && Math.Abs(fit.y + fit.height - area.y - area.height) < .001f && Math.Abs(fit.width / portrait.Width - fit.height / portrait.Height) < .00001f,
+                    "retrato mantém a proporção e a imagem inteira em diálogos, mochila e moradores");
+            }
+        }
+        using var credits = typeof(Portraits).Assembly.GetManifestResourceStream("ValeDoSol.CharacterCredits.txt");
+        check(credits is not null && credits.Length > 80, "créditos e procedência dos retratos acompanham o executável");
     }
 
     static void CheckSaleLimits(Action<bool, string> check)

@@ -8,9 +8,9 @@ namespace ValeDoSol;
 public static partial class Ui
 {
     public static readonly Rectangle Hotbar = new(371, 638, 538, 68);
-    static readonly Rectangle BagButton = new(20, 650, 48, 48);
+    static readonly Rectangle BagButton = new(20, 650, 48, 48), MapButton = new(80, 650, 48, 48);
     static bool hit(Game g, Rectangle r) => CheckCollisionPointRec(g.mouse, r);
-    public static bool hud_hit(Point p) => CheckCollisionPointRec(p, Hotbar) || CheckCollisionPointRec(p, BagButton) || CheckCollisionPointRec(p, new(1046, 12, 222, 170)) || CheckCollisionPointRec(p, new(16, 17, 320, 73));
+    public static bool hud_hit(Point p) => CheckCollisionPointRec(p, Hotbar) || CheckCollisionPointRec(p, BagButton) || CheckCollisionPointRec(p, MapButton) || CheckCollisionPointRec(p, new(1046, 12, 222, 170)) || CheckCollisionPointRec(p, new(16, 17, 320, 73));
     static void text(string s, double x, double y, int size, long color = 0x55371f) => DrawText(s, x, y, size, color_hex(color));
     static int wrap(string s, int x, int y, int width, int size, int line, long color = 0x55371f) { foreach (string paragraph in s.Split('\n')) { string current = ""; foreach (string word in paragraph.Split(' ', StringSplitOptions.RemoveEmptyEntries)) { string candidate = current.Length == 0 ? word : current + " " + word; if (current.Length > 0 && MeasureText(candidate, size) > width) { text(current, x, y, size, color); y += line; current = word; } else current = candidate; } if (current.Length > 0) { text(current, x, y, size, color); y += line; } } return y; }
     static void frame(Rectangle r, bool dark = false)
@@ -72,6 +72,8 @@ public static partial class Ui
         }
         frame(BagButton); tool_icon(3, 27, 658, .9); text("I", 58, 679, 13);
         if (g.dialog == D_NONE && hit(g, BagButton) && IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) { g.tab = 0; game_modal(g, D_MENU); }
+        frame(MapButton); DrawRectangle(88, 660, 31, 26, color_hex(0x8fa66b)); DrawLine(99, 661, 99, 685, color_hex(0xd8cc9a)); DrawLine(108, 661, 108, 685, color_hex(0xd8cc9a)); DrawLine(89, 674, 118, 674, color_hex(0xd8cc9a)); text("M", 113, 680, 12);
+        if (g.dialog == D_NONE && hit(g, MapButton) && IsMouseButtonReleased(MOUSE_BUTTON_LEFT)) open_civic(g, 1);
         if (g.location_timer > 0) { string name = Map.Name(s.scene); int width = MeasureText(name, 20) + 44; frame(new((UI_W - width) / 2, 21, width, 40)); text(name, (UI_W - width) / 2 + 22, 30, 20); }
         if (g.dialog == D_NONE)
         {
@@ -109,23 +111,24 @@ public static partial class Ui
                 for (int k = 0; k < 5; k++) heart(x + 94 + k * 20, y + 58, k < s.friendship[i]);
                 text(met ? Social.Now(i, s).activity : "Ainda não se conheceram", x + 94, y + 79, 13, 0x846044);
             }
-            text("Chuva e fins de semana mudam os encontros e as rotinas.", 310, 604, 16);
+            text("Chuva e fins de semana mudam as rotinas.", 211, 604, 16);
+            if (button(g, new(757, 594, 316, 30), "Ver retratos ampliados")) game_modal(g, D_GALLERY);
 
         }
     }
     static void dialogue(Game g)
     {
-        State s = g.s; int n = g.npc; frame(new(86, 396, 1108, 298)); frame(new(105, 413, 160, 178)); portrait(n, 118, 429, 2.9f); text(NPCS[n].name, 120, 605, 26); text(NPCS[n].role, 295, 415, 16, 0x927047); text(Social.Now(n, s).activity, 295, 438, 14, 0x927047);
-        int letters = Math.Clamp((int)(Math.Max(0, g.dialog_age - .1f) * 55), 0, g.reply.Length); wrap(g.reply[..letters], 295, 468, 872, 21, 29);
+        State s = g.s; int n = g.npc; frame(new(86, 396, 1108, 298)); frame(new(96, 409, 224, 244)); portrait(n, 100, 415, 4.5f); text(NPCS[n].name, 110, 665, 23); text(NPCS[n].role, 342, 415, 16, 0x927047); text(Social.Now(n, s).activity, 342, 438, 14, 0x927047);
+        int letters = Math.Clamp((int)(Math.Max(0, g.dialog_age - .1f) * 55), 0, g.reply.Length); wrap(g.reply[..letters], 342, 468, 825, 21, 29);
         string[] topics = ["Seu trabalho [Q]", "Algo pessoal [T]", "Seu dia [Y]", "O caderno [U]"]; int[] keys = [81, 84, 89, 85];
-        for (int i = 0; i < 4; i++) if (button(g, new(298 + i * 219, 590, 211, 33), topics[i]) || (g.dialog_age > .2f && IsKeyPressed(keys[i]))) { g.reply = i == 3 ? Story.NpcLine(s, n) : Social.Topic(s, n, i); g.dialog_age = 0; game_save(g); }
+        for (int i = 0; i < 4; i++) if (button(g, new(342 + i * 207, 590, 199, 33), topics[i]) || (g.dialog_age > .2f && IsKeyPressed(keys[i]))) { g.reply = i == 3 ? Story.NpcLine(s, n) : Social.Topic(s, n, i); g.dialog_age = 0; game_save(g); }
 
         bool storyAction = Story.Current(s).ContactNpc == n && can_story_handoff(g);
-        if (storyAction && button(g, new(298, 640, 270, 34), "Continuar história")) { advance_story(g); return; }
-        if (!storyAction && n == 0 && button(g, new(298, 640, 270, 34), "Comprar e vender", g.s.scene == SHOP && g.npc_scene[0] == SHOP)) game_modal(g, D_SHOP);
-        if (!storyAction && n == 1 && button(g, new(298, 640, 270, 34), s.watering_level == 2 ? "Regador melhorado" : "Regador: 60 G + 8 madeiras", s.watering_level < 2)) { g.reply = upgrade_can(s) ? "Prontinho! Agora seu regador molha o canteiro escolhido e seus quatro vizinhos." : "Preciso de 8 madeiras e 60 moedas. Recolha os troncos pela fazenda e volte quando puder."; g.dialog_age = 0; game_save(g); }
-        if (!storyAction && n == 3 && (s.claimed & 4) == 0 && button(g, new(298, 640, 270, 34), "Entregar 3 cenouras", s.inventory[0] >= 3)) { claim_quest(s, 2); g.reply = "Perfeitas! Muito obrigado por ajudar na minha pesquisa. Aqui estão suas 75 moedas."; g.dialog_age = 0; game_save(g); }
-        if (!storyAction && n == 2) text("Sua vara está na tecla 9.", 298, 649, 17, 0x887045); if (!storyAction && n >= 4) text("Converse pelos assuntos acima.", 298, 649, 17, 0x887045);
+        if (storyAction && button(g, new(342, 640, 230, 34), "Continuar história")) { advance_story(g); return; }
+        if (!storyAction && n == 0 && button(g, new(342, 640, 230, 34), "Comprar e vender", g.s.scene == SHOP && g.npc_scene[0] == SHOP)) game_modal(g, D_SHOP);
+        if (!storyAction && n == 1 && button(g, new(342, 640, 230, 34), s.watering_level == 2 ? "Regador melhorado" : "Regador: 60 G + 8 madeiras", s.watering_level < 2)) { g.reply = upgrade_can(s) ? "Prontinho! Agora seu regador molha o canteiro escolhido e seus quatro vizinhos." : "Preciso de 8 madeiras e 60 moedas. Recolha os troncos pela fazenda e volte quando puder."; g.dialog_age = 0; game_save(g); }
+        if (!storyAction && n == 3 && (s.claimed & 4) == 0 && button(g, new(342, 640, 230, 34), "Entregar 3 cenouras", s.inventory[0] >= 3)) { claim_quest(s, 2); g.reply = "Perfeitas! Muito obrigado por ajudar na minha pesquisa. Aqui estão suas 75 moedas."; g.dialog_age = 0; game_save(g); }
+        if (!storyAction && n == 2) text("Sua vara está na tecla 9.", 342, 649, 17, 0x887045); if (!storyAction && n >= 4) text("Converse pelos assuntos acima.", 342, 649, 17, 0x887045);
         if (button(g, new(585, 640, 245, 34), "Dar um presente", s.inventory.Any(x => x > 0) && s.gifted_day[n] != s.day)) { int crop = Array.FindIndex(s.inventory, count => count > 0); give_gift(s, n); g.reply = Social.GiftReply(s, n, crop); g.dialog_age = 0; game_save(g); }
         if (button(g, new(847, 640, 324, 34), "Até mais! [E]")) g.dialog = D_NONE;
         if (g.dialog_age > .2f && (IsKeyPressed(KEY_E) || IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_SPACE))) { if (letters < g.reply.Length) g.dialog_age = g.reply.Length / 55f + 1; else g.dialog = D_NONE; }
@@ -133,12 +136,14 @@ public static partial class Ui
     static void dialogs(Game g)
     {
         if (g.dialog == D_NONE) return; if (g.dialog != D_NPC) DrawRectangle(0, 0, UI_W, UI_H, new Color(20, 25, 18, 125));
+        if (g.dialog == D_GALLERY) { draw_gallery(g); return; }
+        if (g.dialog == D_CIVIC) { draw_civic(g); return; }
         if (g.dialog == D_TITLE) { draw_title(g); return; }
         if (g.dialog == D_LETTER) { draw_letter(g); return; }
         if (g.dialog == D_MENU) { inventory(g); return; }
         if (g.dialog == D_NPC) { dialogue(g); return; }
         if (g.dialog == D_PAUSE) { frame(new(450, 122, 380, 480)); text("Vale do Sol", 510, 157, 39); if (button(g, new(490, 225, 300, 50), "Continuar")) g.dialog = D_NONE; if (button(g, new(490, 290, 300, 50), "Controles")) game_modal(g, D_HELP); if (button(g, new(490, 355, 300, 50), g.s.sharp_pixels ? "Imagem: nítida" : "Imagem: preencher")) { g.s.sharp_pixels = !g.s.sharp_pixels; game_save(g); } if (button(g, new(490, 420, 300, 50), "Salvar e sair")) { game_save(g); g.quit = true; } text("Esc para voltar", 561, 548, 17); }
-        else if (g.dialog == D_HELP) { frame(new(273, 60, 734, 594)); text("Como viver no vale", 315, 91, 32); string[] keys = ["WASD / setas", "Shift", "1-5 / 6-8 / 9", "Clique / Espaço", "Botão direito", "E / F", "I / J / R", "F5 / F11"], actions = ["Caminhar", "Correr", "Ferramentas / sementes / vara", "Usar a ferramenta perto de você", "Caminhar até um ponto", "Interagir / pescar", "Mochila / diário / moradores", "Salvar / tela cheia"]; for (int i = 0; i < keys.Length; i++) { text(keys[i], 315, 153 + i * 39, 19, 0x927047); text(actions[i], 552, 153 + i * 39, 19); } wrap("Prepare, plante, regue e durma na cama da sua casa. Visite a vila pelo caminho à direita da fazenda. Entre no armazém e converse com Lia para vender a colheita.", 315, 483, 645, 19, 28); if (button(g, new(450, 594, 380, 38), "Voltar ao jogo")) g.dialog = D_NONE; }
+        else if (g.dialog == D_HELP) { frame(new(273, 60, 734, 594)); text("Como viver no vale", 315, 91, 32); string[] keys = ["WASD / setas", "Shift", "1-5 / 6-8 / 9", "Clique / Espaço", "Botão direito", "E / F", "I / J / R", "F5 / F11"], actions = ["Caminhar", "Correr", "Ferramentas / sementes / vara", "Usar a ferramenta perto de você", "Caminhar até um ponto", "Interagir / pescar", "Mochila / diário / moradores", "Salvar / tela cheia"]; for (int i = 0; i < keys.Length; i++) { text(keys[i], 315, 153 + i * 39, 19, 0x927047); text(actions[i], 552, 153 + i * 39, 19); } wrap("A horta fica ao sul da estrada. Cultive pelos corredores; os canteiros elevados são sólidos. Use M para consultar o mapa. Visite a prefeitura e o quadro de avisos para conhecer os lugares da vila.", 315, 483, 645, 19, 28); if (button(g, new(450, 594, 380, 38), "Voltar ao jogo")) g.dialog = D_NONE; }
         else if (g.dialog == D_REST) { frame(new(380, 245, 520, 230)); text("Dormir por hoje?", 421, 276, 32); wrap("As plantas regadas vão crescer e sua energia será recuperada. Amanhã é um novo começo.", 421, 330, 435, 19, 27); if (button(g, new(415, 417, 210, 38), "Ainda não")) g.dialog = D_NONE; if (button(g, new(645, 417, 220, 38), "Sim, boa noite")) game_rest(g); }
         else if (g.dialog == D_SHOP)
         {

@@ -1,0 +1,18 @@
+VALE DO SOL — RETRATOS DOS MORADORES — EDIÇÃO 8
+
+Lia, Bento, Iara, Theo, Dora, Miguel, Ceci e Otávio.
+
+Imagens originais geradas para o projeto Vale do Sol em 23 de outubro de 2026,
+com a ferramenta de geração de imagens da OpenAI, a pedido do proprietário do
+projeto. Direção de arte e integração: projeto Vale do Sol.
+
+Cada PNG contém um único personagem em fundo transparente. Os originais
+completos foram incluídos sem recorte, redimensionamento ou edição posterior.
+O jogo preserva a proporção e desenha a imagem inteira, usando filtro próprio
+para a redução dos retratos. Os sprites de caminhada são desenhos originais
+editáveis em C# e continuam separados destes retratos.
+
+Estes retratos são disponibilizados com o projeto sob a licença MIT presente
+na raiz do repositório, na medida dos direitos aplicáveis ao projeto.
+Não são artes do Liberated Pixel Cup. As texturas LPC do cenário mantêm os
+créditos e a licença CC BY-SA 3.0 em Resources/Lpc.

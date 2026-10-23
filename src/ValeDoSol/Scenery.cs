@@ -58,6 +58,7 @@ public static class Scenery
     }
     public static void House(Building b, bool night)
     {
+        if (b.type == 7) { TownArt.Hall(b, night); return; }
         int x = b.x * 32, y = b.y * 32, w = b.w * 32, h = b.h * 32;
         DrawRectangle(x + 8, y + h - 5, w, 17, new Color(44, 38, 28, 50));
         Tile("house", new(129, 16, 30, 16), new(x + 8, y + 70, w - 16, h - 70));

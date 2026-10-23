@@ -3,7 +3,7 @@ using static ValeDoSol.Logic;
 using static ValeDoSol.Dialog;
 namespace ValeDoSol;
 
-public enum Dialog { D_NONE, D_HELP, D_NPC, D_SHOP, D_REST, D_MENU, D_PAUSE, D_TITLE, D_LETTER }
+public enum Dialog { D_NONE, D_HELP, D_NPC, D_SHOP, D_REST, D_MENU, D_PAUSE, D_TITLE, D_LETTER, D_CIVIC, D_GALLERY }
 public readonly record struct PendingAction(int type = 0, int index = 0, int tool = 0, Point target = default);
 public class Game
 {
@@ -26,7 +26,8 @@ public class Game
     public float[] npc_bubble_time = new float[Social.Count], npc_bubble_cooldown = new float[Social.Count];
     public PendingAction pending;
     public float elapsed, clock_tick, save_tick, toast_timer, dialog_age, location_timer = 4, fade_timer, action_timer;
-    public int letter_page, journal_page;
+    public int letter_page, journal_page, civic_page;
+    public Scene map_scene = Scene.VILLAGE;
     public string letter_title = "", letter_body = "";
     public bool moving, save_ok, quit, ignore_focus;
     public int fishing;
@@ -90,15 +91,20 @@ public static class GameLogic
         if (!Story.TryAdvance(g.s, out string message)) { game_toast(g, message); return; }
         game_save(g); open_letter(g, Story.Complete(g.s) ? "A próxima página é sua" : "Uma nova página", message + "\n\n" + (Story.Complete(g.s) ? Story.Ending : Story.Current(g.s).Objective));
     }
+    public static void open_civic(Game g, int page = 0)
+    {
+        g.civic_page = page; g.map_scene = g.s.scene == FARM ? FARM : VILLAGE;
+        game_modal(g, D_CIVIC);
+    }
     public static void game_toast(Game g, string message) { g.toast = message; g.toast_timer = 7; }
     public static void game_save(Game g) { g.save_ok = state_save(g.s, g.save_path); }
     public static void game_init(Game g, string dir)
     {
         g.save_dir = dir; g.save_path = Path.Combine(dir, "save.json"); bool exists = false, loaded = false;
-        try { Directory.CreateDirectory(dir); exists = File.Exists(g.save_path); if (state_load(out var state, g.save_path)) { g.s = state; loaded = true; using var document = System.Text.Json.JsonDocument.Parse(File.ReadAllText(g.save_path)); string backup = Path.Combine(dir, "save-before-v7.json"); if ((!document.RootElement.TryGetProperty("edition", out var oldEdition) || oldEdition.GetInt32() < 7) && !File.Exists(backup)) File.Copy(g.save_path, backup); } } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { g.save_path = ""; }
+        try { Directory.CreateDirectory(dir); exists = File.Exists(g.save_path); if (state_load(out var state, g.save_path)) { g.s = state; loaded = true; using var document = System.Text.Json.JsonDocument.Parse(File.ReadAllText(g.save_path)); string backup = Path.Combine(dir, "save-before-v8.json"); if ((!document.RootElement.TryGetProperty("edition", out var oldEdition) || oldEdition.GetInt32() < 8) && !File.Exists(backup)) File.Copy(g.save_path, backup); } } catch (Exception e) when (e is IOException or UnauthorizedAccessException) { g.save_path = ""; }
         safe_position(g); reset_npcs(g); g.camera = camera_target(g.s);
         if (exists && !loaded) { g.save_path = ""; g.save_ok = false; game_toast(g, "Save inválido preservado. Inicie com outro diretório de save para criar uma nova partida."); }
-        else { game_save(g); game_toast(g, loaded ? "Bem-vindo de volta! O vale sentiu sua falta." : "Um novo começo. Aperte H para aprender a jogar."); }
+        else { game_save(g); game_toast(g, loaded ? "Bem-vindo de volta! O vale sentiu sua falta." : "Sua horta fica ao sul da estrada. Use M para ver o mapa e H para os controles."); }
     }
     public static void game_modal(Game g, Dialog d) { g.dialog = d; g.dialog_age = 0; g.path_length = 0; g.pending = new(); g.fishing = 0; }
     public static void game_travel(Game g)
@@ -117,6 +123,8 @@ public static class GameLogic
                 return new(3, (int)place.scene, 0, place.Door);
         void Consider(PendingAction a) { float d = distance(p, a.target); if (d < best) { best = d; result = a; } }
         for (int i = 0; i < Social.Count; i++) if (g.npc_scene[i] == g.s.scene) Consider(new(1, i, 0, g.npc_position[i]));
+        if (g.s.scene == Scene.TOWNHALL) Consider(new(11, 0, 0, Map.NoticePoint));
+        if (g.s.scene == VILLAGE) Consider(new(11, 0, 0, VillageProps.NoticePoint));
         if (g.s.scene == SHOP && g.npc_scene[0] == SHOP) Consider(new(1, 0, 0, Map.ServicePoint(SHOP)));
         if (Map.Indoors(g.s.scene))
         {
@@ -128,10 +136,18 @@ public static class GameLogic
         }
         for (int i = 0; i < RESOURCES.Length; i++) { var r = RESOURCES[i]; if (r.scene != g.s.scene || (g.s.gathered & (1u << i)) != 0) continue; Consider(new(2, i, 0, new(r.x * 32 + 16, r.y * 32 + 16))); }
         foreach (Place place in Map.Places(g.s.scene)) Consider(new(3, (int)place.scene, 0, place.Door));
+        if (g.s.scene == VILLAGE) for (int i = 0; i < VillageProps.All.Length; i++)
+        {
+            var prop = VillageProps.All[i]; if (prop.kind == VillageKind.NoticeBoard) continue;
+            Rectangle b = prop.footprint;
+            Consider(new(12, i, 0, new(Math.Clamp(p.x, b.x - 8, b.x + b.width + 8), Math.Clamp(p.y, b.y - 8, b.y + b.height + 8))));
+        }
         return result;
     }
     static void perform(Game g, PendingAction a)
     {
+        if (a.type == 12) { game_toast(g, VillageProps.All[a.index].description); return; }
+        if (a.type == 11) { open_civic(g); return; }
         if (a.type == 1) { game_converse(g, a.index); return; }
         if (a.type == 3) { Scene room = (Scene)a.index; game_scene(g, room, Map.Arrival(room)); return; }
         if (a.type == 7) { game_modal(g, D_REST); return; }
@@ -145,7 +161,7 @@ public static class GameLogic
     }
     public static void game_interact(Game g) { var a = closest(g); if (a.type != 0) perform(g, a); else game_toast(g, g.s.scene == SHOP ? "Lia está fora do balcão. O armazém atende das 8h às 17h; nos fins de semana, até 13h." : "Aproxime-se de um morador, de uma porta ou de um tronco."); }
     static bool near_pond(Game g) => water_bodies(g.s.scene).Any(w => distance(g.s.player, new(Math.Clamp(g.s.player.x, w.x, w.x + w.width), Math.Clamp(g.s.player.y, w.y, w.y + w.height))) < 67);
-    public static string interaction_hint(Game g) { var a = closest(g); return a.type switch { 1 => "E  Conversar com " + NPCS[a.index].name, 2 => "E  Recolher " + (RESOURCES[a.index].type == 0 ? "madeira" : "pedra"), 3 => "E  Entrar: " + Map.Name((Scene)a.index), 7 => "E  Dormir", 8 => "E  Sair", 10 => "E  Examinar", _ => g.s.rod && near_pond(g) ? "F  Pescar" : "" }; }
+    public static string interaction_hint(Game g) { var a = closest(g); return a.type switch { 1 => "E  Conversar com " + NPCS[a.index].name, 2 => "E  Recolher " + (RESOURCES[a.index].type == 0 ? "madeira" : "pedra"), 3 => "E  Entrar: " + Map.Name((Scene)a.index), 7 => "E  Dormir", 8 => "E  Sair", 10 or 12 => "E  Examinar", 11 => "E  Consultar quadro da vila", _ => g.s.rod && near_pond(g) ? "F  Pescar" : "" }; }
     public static void farm_near(Game g, int index) { if (index < 0) return; Point p = plot_position(index); p.x += 16; p.y += 16; if (distance(g.s.player, p) > 76) { game_toast(g, "Chegue mais perto do canteiro para usar a ferramenta."); return; } string message = farm_action(g.s, index, g.tool, out bool ok); if (ok) { g.action_timer = .32f; g.action_target = p; game_save(g); } game_toast(g, message); }
     public static void use_tool(Game g) { if (g.tool == 5) { game_fish(g); return; } if (g.tool == 4) { game_interact(g); return; } if (g.s.scene != FARM) return; int index; { Point p = g.s.player; Point[] directions = [new(0, 32), new(-32, 0), new(32, 0), new(0, -32)]; p.x += directions[g.facing].x; p.y += directions[g.facing].y; index = plot_at(p.x, p.y); } farm_near(g, index); }
 
@@ -159,12 +175,19 @@ public static class GameLogic
     }
     public static void game_catch(Game g) { if (g.fishing == 0) return; if (g.fishing == 2) { g.s.fish = Math.Min(10000000, g.s.fish + 1); game_toast(g, "Um peixe fresquinho! Venda por 18 G para Lia."); } else game_toast(g, "Muito cedo! Espere aparecer AGORA antes de puxar."); g.fishing = 0; game_save(g); }
     static void finish_action(Game g) { var a = g.pending; g.pending = new(); if (a.type == 0) return; if (a.type == 6) { var p = plot_position(a.index); p.x += 16; p.y += 16; if (distance(g.s.player, p) < 72) { game_toast(g, farm_action(g.s, a.index, a.tool, out _)); game_save(g); } } else if (distance(g.s.player, a.target) < 90) perform(g, a); }
-    static void walk_to(Game g, Point target, PendingAction action)
+    public static void walk_to(Game g, Point target, PendingAction action)
     {
-        g.fishing = 0; Point goal = new(); bool found = false; float best = float.MaxValue;
-        for (int radius = 0; radius < 4 && !found; radius++) for (int x = -radius; x <= radius; x++) for (int y = -radius; y <= radius; y++) { if (Math.Abs(x) + Math.Abs(y) > radius) continue; Point candidate = new(((int)MathF.Floor(target.x / 32) + x) * 32 + 16, ((int)MathF.Floor(target.y / 32) + y) * 32 + 16); if (blocked(g.s.scene, candidate.x, candidate.y)) continue; float d = distance(g.s.player, candidate); if (d < best) { best = d; goal = candidate; found = true; } }
-        if (!found) { game_toast(g, "Não dá para caminhar até esse lugar."); return; }
-        g.path_length = find_path(g.s.scene, g.s.player, goal, g.path); g.path_at = 0; g.pending = action; if (g.path_length == 0) { if (distance(g.s.player, goal) < 46) finish_action(g); else { g.pending = new(); game_toast(g, "Caminho bloqueado. Tente chegar pelo outro lado."); } }
+        g.fishing = 0;
+        // The collision/navigation grid has 16px cells. Preserve free clicks exactly,
+        // including the narrow outer aisles, instead of rounding them to 32px plots.
+        Point goal = Physics.Nearest(g.s.scene, target);
+        g.path_length = find_path(g.s.scene, g.s.player, goal, g.path);
+        g.path_at = 0; g.pending = action;
+        if (g.path_length == 0)
+        {
+            if (distance(g.s.player, goal) < 2) finish_action(g);
+            else { g.pending = new(); game_toast(g, "Caminho bloqueado. Tente chegar pelo outro lado."); }
+        }
     }
     static void world_click(Game g, Point p)
     {
@@ -281,6 +304,7 @@ public static class GameLogic
             return;
         }
         if ((input_edges && IsKeyPressed(KEY_ESCAPE))) { if (g.dialog != D_NONE) g.dialog = D_NONE; else game_modal(g, D_PAUSE); g.fishing = 0; return; }
+        if (input_edges && IsKeyPressed(KEY_M)) { if (g.dialog == D_CIVIC) g.dialog = D_NONE; else open_civic(g, 1); return; }
         int menu = (input_edges && IsKeyPressed(KEY_I)) || (input_edges && IsKeyPressed(KEY_TAB)) ? 0 : (input_edges && IsKeyPressed(KEY_J)) ? 1 : (input_edges && IsKeyPressed(KEY_R)) ? 2 : -1;
         if (menu >= 0) { if (g.dialog == D_MENU && g.tab == menu) g.dialog = D_NONE; else { g.tab = menu; game_modal(g, D_MENU); } return; }
         if (g.dialog != D_NONE || (!g.ignore_focus && !IsWindowFocused())) return;
